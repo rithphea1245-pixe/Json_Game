@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "password": "admin67",
+    "totalPoints": 80,
+    "isAdmin": true,
+    "lastClaimDate": "2026-09-15"
+  },
+  {
+    "id": 2,
+    "username": "bob",
+    "email": "bob@example.com",
+    "password": "password456",
+    "totalPoints": 160,
+    "isAdmin": false,
+    "lastClaimDate": "2026-09-15"
+  }
+]
