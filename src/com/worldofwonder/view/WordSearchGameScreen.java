@@ -654,6 +654,14 @@ public class WordSearchGameScreen extends JPanel {
         wordListPanel.removeAll();
         for (PlacedWord w : words) {
             JLabel chip = UITheme.chipLabel(w.word);
+            chip.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+            chip.setToolTipText("Click to view definition");
+            chip.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    showWordDefinition(w.word);
+                }
+            });
             if (w.found) {
                 int ci = w.colorIndex % HIGHLIGHTER_BORDERS.length;
                 chip.setForeground(HIGHLIGHTER_BORDERS[ci]);
@@ -668,6 +676,24 @@ public class WordSearchGameScreen extends JPanel {
         }
         wordListPanel.revalidate();
         wordListPanel.repaint();
+    }
+
+    private void showWordDefinition(String word) {
+        if (word == null || word.isEmpty()) return;
+        feedbackLabel.setForeground(UITheme.TEAL);
+        feedbackLabel.setText("Looking up definition for '" + word + "'...");
+
+        com.worldofwonder.util.ApiService.fetchWikiSummary(word, summary -> {
+            String extract = summary.get("extract");
+            if (extract != null && !extract.isEmpty()) {
+                if (extract.length() > 95) extract = extract.substring(0, 92) + "...";
+                feedbackLabel.setText("<html><b>" + word + ":</b> " + extract + "</html>");
+            } else {
+                feedbackLabel.setText(word + " - Wonder Vocabulary Term");
+            }
+        }, err -> {
+            feedbackLabel.setText(word + " - Wonder Vocabulary Term");
+        });
     }
 
     private void updateMeta() {
@@ -814,6 +840,7 @@ public class WordSearchGameScreen extends JPanel {
         SoundUtil.playCorrect();
         feedbackLabel.setText(com.worldofwonder.util.I18n.get("ws_found_word", w.word, earned));
         feedbackLabel.setForeground(UITheme.GREEN);
+        showWordDefinition(w.word);
         renderWordList();
         updateMeta();
         board.invalidateCache();

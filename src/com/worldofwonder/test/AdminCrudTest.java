@@ -406,8 +406,72 @@ public class AdminCrudTest {
 
         System.out.println("[TEST 22] QuizGameScreen Worlds, Levels & Bilingual Questions verified in Khmer mode: " + w1Name);
 
+        // [TEST 23] User Gamification Model
+        com.worldofwonder.model.User gameUser = new com.worldofwonder.model.User(999, "wonder_gamer", "gamer@wonder.com", "pass123", 100);
+        if (gameUser.getHearts() != 5 || !gameUser.hasHearts()) {
+            throw new AssertionError("Initial hearts should be 5!");
+        }
+        gameUser.loseHeart();
+        if (gameUser.getHearts() != 4) {
+            throw new AssertionError("Hearts should be 4 after loseHeart! Got: " + gameUser.getHearts());
+        }
+        gameUser.restoreHearts();
+        if (gameUser.getHearts() != 5) {
+            throw new AssertionError("Hearts should restore to 5!");
+        }
+        gameUser.addHintCoins(50);
+        if (gameUser.getHintCoins() != 50) {
+            throw new AssertionError("Hint coins should be 50!");
+        }
+        boolean spent = gameUser.spendHintCoins(20);
+        if (!spent || gameUser.getHintCoins() != 30) {
+            throw new AssertionError("Spend hint coins failed! Remaining: " + gameUser.getHintCoins());
+        }
+        gameUser.updateStreak();
+        if (gameUser.getStreakCount() != 1) {
+            throw new AssertionError("Streak count should be 1 on first login!");
+        }
+        System.out.println("[TEST 23] User Gamification (Hearts, Streaks, Hint Coins) verified successfully.");
+
+        // [TEST 24] MatchGameScreen
+        com.worldofwonder.view.MatchGameScreen matchScreen = new com.worldofwonder.view.MatchGameScreen(dummyDash);
+        matchScreen.setSize(1040, 800);
+        java.awt.image.BufferedImage matchImg = new java.awt.image.BufferedImage(1040, 800, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2Match = matchImg.createGraphics();
+        matchScreen.paint(g2Match);
+        g2Match.dispose();
+        System.out.println("[TEST 24] MatchGameScreen (60-sec Match Master) instantiated and rendered successfully.");
+
+        // [TEST 25] WorldWheelModal
+        com.worldofwonder.view.WorldWheelModal wheelModal = new com.worldofwonder.view.WorldWheelModal(null, dummyDash);
+        wheelModal.setSize(460, 540);
+        java.awt.image.BufferedImage wheelImg = new java.awt.image.BufferedImage(460, 540, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2Wheel = wheelImg.createGraphics();
+        wheelModal.paint(g2Wheel);
+        g2Wheel.dispose();
+        wheelModal.dispose();
+        System.out.println("[TEST 25] WorldWheelModal (6-world spinning wheel) instantiated and rendered successfully.");
+
+        // [TEST 26] EncyclopediaModal
+        com.worldofwonder.view.EncyclopediaModal encModal = new com.worldofwonder.view.EncyclopediaModal(null);
+        encModal.setSize(740, 600);
+        java.awt.image.BufferedImage encImg = new java.awt.image.BufferedImage(740, 600, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2Enc = encImg.createGraphics();
+        encModal.paint(g2Enc);
+        g2Enc.dispose();
+        encModal.dispose();
+        System.out.println("[TEST 26] EncyclopediaModal (Wikipedia Codex Cards) instantiated and rendered successfully.");
+
+        // [TEST 27] ApiService Helpers & Category Mapping
+        if (com.worldofwonder.util.ApiService.getOpenTDBCategory(1) != 23 ||
+            com.worldofwonder.util.ApiService.getOpenTDBCategory(2) != 17 ||
+            com.worldofwonder.util.ApiService.getOpenTDBCategory(3) != 27) {
+            throw new AssertionError("OpenTDB category mappings invalid!");
+        }
+        System.out.println("[TEST 27] ApiService Category Mappings & Service Layer verified successfully.");
+
         com.worldofwonder.util.I18n.setLanguage(com.worldofwonder.util.I18n.Language.EN);
-        System.out.println("=== ALL ADMIN CRUD, THEME, AUTH, I18N & SECURITY TESTS PASSED SUCCESSFULLY! ===");
+        System.out.println("=== ALL ADMIN CRUD, THEME, AUTH, I18N, GAMIFICATION & NEW GAME MODES TESTS PASSED SUCCESSFULLY! ===");
     }
 
     private static int countAllComponents(java.awt.Container c) {

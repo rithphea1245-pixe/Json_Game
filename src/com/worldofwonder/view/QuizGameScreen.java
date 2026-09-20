@@ -30,6 +30,7 @@ import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class QuizGameScreen extends JPanel {
 
@@ -84,6 +85,11 @@ public class QuizGameScreen extends JPanel {
     private JLabel streakLabel;
     private JButton fiftyFiftyBtn;
     private boolean fiftyFiftyUsed = false;
+    private JButton freezeBtn;
+    private boolean freezeUsed = false;
+    private JButton skipBtn;
+    private boolean skipUsed = false;
+    private JButton onlineTriviaBtn;
     private JLabel titleLbl;
     private JButton topBackBtn;
     private JLabel worldsTitle;
@@ -382,19 +388,35 @@ public class QuizGameScreen extends JPanel {
         south.setOpaque(false);
         south.setLayout(new BoxLayout(south, BoxLayout.Y_AXIS));
 
-        // Lifelines Row (Hint + 50:50)
-        JPanel lifelineRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
+        // Lifelines Row (Hint + 50:50 + Freeze Time + Skip + Online Trivia API)
+        JPanel lifelineRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
         lifelineRow.setOpaque(false);
 
         hintButton = UITheme.iconPillButton(UITheme.VectorIcon.LIGHTBULB, com.worldofwonder.util.I18n.get("quiz_hint"), UITheme.GOLD);
-        UIUtil.fixedSize(hintButton, 160, UITheme.BTN_H_SM);
+        UIUtil.fixedSize(hintButton, 130, UITheme.BTN_H_SM);
         hintButton.addActionListener(e -> showHint());
         lifelineRow.add(hintButton);
 
         fiftyFiftyBtn = UITheme.iconPillButton(UITheme.VectorIcon.SEARCH, com.worldofwonder.util.I18n.get("quiz_lifeline"), UITheme.TEAL);
-        UIUtil.fixedSize(fiftyFiftyBtn, 170, UITheme.BTN_H_SM);
+        UIUtil.fixedSize(fiftyFiftyBtn, 130, UITheme.BTN_H_SM);
         fiftyFiftyBtn.addActionListener(e -> useFiftyFifty());
         lifelineRow.add(fiftyFiftyBtn);
+
+        freezeBtn = UITheme.iconPillButton(UITheme.VectorIcon.REFRESH, com.worldofwonder.util.I18n.get("powerup_freeze"), UITheme.TEAL);
+        UIUtil.fixedSize(freezeBtn, 135, UITheme.BTN_H_SM);
+        freezeBtn.addActionListener(e -> freezeTime());
+        lifelineRow.add(freezeBtn);
+
+        skipBtn = UITheme.iconPillButton(UITheme.VectorIcon.ARROW_RIGHT, com.worldofwonder.util.I18n.get("powerup_skip"), UITheme.VIOLET);
+        UIUtil.fixedSize(skipBtn, 105, UITheme.BTN_H_SM);
+        skipBtn.addActionListener(e -> skipQuestion());
+        lifelineRow.add(skipBtn);
+
+        onlineTriviaBtn = UITheme.iconPillButton(UITheme.VectorIcon.GLOBE, "Online API", UITheme.GOLD);
+        UIUtil.fixedSize(onlineTriviaBtn, 120, UITheme.BTN_H_SM);
+        onlineTriviaBtn.setToolTipText("Load fresh live questions from Open Trivia DB");
+        onlineTriviaBtn.addActionListener(e -> fetchOnlineQuestions());
+        lifelineRow.add(onlineTriviaBtn);
 
         hintLabel = new UITheme.HintBox(" ");
         hintLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -608,6 +630,8 @@ public class QuizGameScreen extends JPanel {
         selectedAnswer = -1;
         streak = 0;
         fiftyFiftyUsed = false;
+        freezeUsed = false;
+        skipUsed = false;
         quizLevelName.setText(getLevelDisplayName(level));
         quizLevelName.setFont(UITheme.fontFor(quizLevelName.getText(), Font.BOLD, UITheme.FONT_SECTION));
         cards.show(content, PANEL_QUIZ);
@@ -619,9 +643,9 @@ public class QuizGameScreen extends JPanel {
         if (questions == null || questions.isEmpty()) {
             questions = sample.getQuestions(level.getId());
         }
-        if (fiftyFiftyBtn != null) {
-            fiftyFiftyBtn.setEnabled(true);
-        }
+        if (fiftyFiftyBtn != null) fiftyFiftyBtn.setEnabled(true);
+        if (freezeBtn != null) freezeBtn.setEnabled(true);
+        if (skipBtn != null) skipBtn.setEnabled(true);
         updateStreakDisplay();
         renderQuestion();
     }
@@ -659,9 +683,9 @@ public class QuizGameScreen extends JPanel {
         submitButton.setVisible(true);
         submitButton.setEnabled(true);
         nextButton.setVisible(false);
-        if (fiftyFiftyBtn != null) {
-            fiftyFiftyBtn.setEnabled(!fiftyFiftyUsed);
-        }
+        if (fiftyFiftyBtn != null) fiftyFiftyBtn.setEnabled(!fiftyFiftyUsed);
+        if (freezeBtn != null) freezeBtn.setEnabled(!freezeUsed);
+        if (skipBtn != null) skipBtn.setEnabled(!skipUsed);
         optionsPanel.revalidate();
         optionsPanel.repaint();
         UITheme.recordBaseTree(optionsPanel);
@@ -777,6 +801,73 @@ public class QuizGameScreen extends JPanel {
         feedbackLabel.setText(com.worldofwonder.util.I18n.get("quiz_lifeline_used"));
     }
 
+    private void freezeTime() {
+        if (freezeUsed || questions == null || questionIndex >= questions.size()) return;
+        freezeUsed = true;
+        if (freezeBtn != null) freezeBtn.setEnabled(false);
+        secondsLeft += 15;
+        updateTimerDisplay();
+        SoundUtil.playHint();
+        feedbackLabel.setForeground(UITheme.TEAL);
+        feedbackLabel.setText(com.worldofwonder.util.I18n.get("powerup_used") + " (+15s)");
+    }
+
+    private void skipQuestion() {
+        if (skipUsed || questions == null || questionIndex >= questions.size()) return;
+        skipUsed = true;
+        if (skipBtn != null) skipBtn.setEnabled(false);
+        SoundUtil.playClick();
+        feedbackLabel.setForeground(UITheme.GOLD);
+        feedbackLabel.setText(com.worldofwonder.util.I18n.get("powerup_skip") + "!");
+        nextQuestion();
+    }
+
+    private void fetchOnlineQuestions() {
+        if (currentWorld == null) return;
+        int category = com.worldofwonder.util.ApiService.getOpenTDBCategory(currentWorld.getId());
+        feedbackLabel.setForeground(UITheme.TEAL);
+        feedbackLabel.setText(com.worldofwonder.util.I18n.get("api_fetching"));
+
+        com.worldofwonder.util.ApiService.fetchTrivia(category, "easy", 5, results -> {
+            if (results != null && !results.isEmpty()) {
+                List<Question> onlineList = new ArrayList<>();
+                int qId = 1;
+                for (Map<String, Object> map : results) {
+                    String qText = (String) map.get("question");
+                    String correct = (String) map.get("correct_answer");
+                    List<String> opts = new ArrayList<>();
+                    opts.add(correct);
+                    if (map.containsKey("incorrect_answers")) {
+                        for (Object o : (List<?>) map.get("incorrect_answers")) {
+                            opts.add(String.valueOf(o));
+                        }
+                    }
+                    Collections.shuffle(opts);
+                    String optA = opts.size() > 0 ? opts.get(0) : "";
+                    String optB = opts.size() > 1 ? opts.get(1) : "";
+                    String optC = opts.size() > 2 ? opts.get(2) : "";
+                    String optD = opts.size() > 3 ? opts.get(3) : "";
+                    char correctLetter = 'A';
+                    if (optB.equals(correct)) correctLetter = 'B';
+                    else if (optC.equals(correct)) correctLetter = 'C';
+                    else if (optD.equals(correct)) correctLetter = 'D';
+
+                    onlineList.add(new Question(qId++, currentLevel != null ? currentLevel.getId() : 1,
+                            qText, optA, optB, optC, optD, String.valueOf(correctLetter), "Think about world history & science!"));
+                }
+                questions = onlineList;
+                questionIndex = 0;
+                points = 0;
+                score = 0;
+                SoundUtil.playVictory();
+                renderQuestion();
+            }
+        }, err -> {
+            feedbackLabel.setForeground(UITheme.CORAL);
+            feedbackLabel.setText(com.worldofwonder.util.I18n.get("api_error"));
+        });
+    }
+
     private void selectAnswer(int idx) {
         selectedAnswer = idx;
         for (int i = 0; i < optionsPanel.getComponentCount(); i++) {
@@ -800,13 +891,16 @@ public class QuizGameScreen extends JPanel {
         submitButton.setEnabled(false);
         hintButton.setEnabled(false);
         if (fiftyFiftyBtn != null) fiftyFiftyBtn.setEnabled(false);
+        if (freezeBtn != null) freezeBtn.setEnabled(false);
+        if (skipBtn != null) skipBtn.setEnabled(false);
 
         Question question = questions.get(questionIndex);
         boolean correct = selectedAnswer == correctIndex(question);
         int baseAward = dashboard.getApp().getQuizController().calculatePointsForQuestion(currentLevel, questions.size());
         if (correct) {
             streak++;
-            int awarded = dashboard.getApp().getQuizController().calculatePointsWithStreak(baseAward, streak);
+            int speedBonus = Math.max(0, secondsLeft);
+            int awarded = dashboard.getApp().getQuizController().calculatePointsWithStreak(baseAward, streak) + speedBonus;
             points += awarded;
             score++;
             SoundUtil.playCorrect();
@@ -819,10 +913,18 @@ public class QuizGameScreen extends JPanel {
             }
             feedbackLabel.setForeground(UITheme.GREEN);
             String streakText = streak >= 5 ? " (2x)" : (streak >= 3 ? " (1.5x)" : "");
-            feedbackLabel.setText(com.worldofwonder.util.I18n.get("quiz_correct_feedback", streakText, awarded));
+            String bonusNote = speedBonus > 0 ? " [+" + speedBonus + " speed bonus]" : "";
+            feedbackLabel.setText(com.worldofwonder.util.I18n.get("quiz_correct_feedback", streakText + bonusNote, awarded));
         } else {
             streak = 0;
             SoundUtil.playError();
+            int userId = dashboard.getUserId();
+            if (userId > 0) {
+                User u = dashboard.getApp().getGameController().getUser(userId);
+                if (u != null) {
+                    u.loseHeart();
+                }
+            }
             feedbackLabel.setForeground(UITheme.ERROR);
             feedbackLabel.setText(com.worldofwonder.util.I18n.get("quiz_wrong_feedback", letter(correctIndex(question))));
         }

@@ -89,6 +89,26 @@ public class DailyRewardModal extends JDialog {
         rewardAmount.setAlignmentX(Component.CENTER_ALIGNMENT);
         center.add(rewardAmount);
 
+        // Daily Login Streak Badge
+        int streakDays = 1;
+        if (userId > 0) {
+            com.worldofwonder.model.User u = gameController.getUser(userId);
+            if (u != null) {
+                streakDays = Math.max(1, u.getStreakCount());
+            }
+        }
+        JPanel streakBadge = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 2));
+        streakBadge.setOpaque(false);
+        streakBadge.add(UITheme.vectorIcon(UITheme.VectorIcon.GIFT, 16, UITheme.GOLD));
+        String streakMsg = com.worldofwonder.util.I18n.get("streak_days", streakDays);
+        JLabel sLbl = new JLabel(streakMsg);
+        sLbl.setFont(UITheme.fontFor(streakMsg, Font.BOLD, 12));
+        sLbl.setForeground(new Color(0xffaa22));
+        streakBadge.add(sLbl);
+        streakBadge.setAlignmentX(Component.CENTER_ALIGNMENT);
+        center.add(Box.createVerticalStrut(4));
+        center.add(streakBadge);
+
         String descStr = canClaim ? com.worldofwonder.util.I18n.get("daily_desc") : com.worldofwonder.util.I18n.get("daily_come_back");
         JLabel desc = new JLabel(descStr, SwingConstants.CENTER);
         desc.setFont(UITheme.fontFor(descStr, Font.PLAIN, 13));
@@ -108,6 +128,13 @@ public class DailyRewardModal extends JDialog {
             claimBtn.addActionListener(e -> {
                 SoundUtil.playVictory();
                 int newTotal = gameController.claimDailyBonus(userId, DAILY_REWARD);
+                if (userId > 0) {
+                    com.worldofwonder.model.User u = gameController.getUser(userId);
+                    if (u != null) {
+                        u.updateStreak();
+                        u.addHintCoins(15);
+                    }
+                }
                 if (newTotal > 0) {
                     dashboard.updateScore(newTotal);
                 } else if (userId <= 0) {

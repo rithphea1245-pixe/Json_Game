@@ -489,7 +489,27 @@ public class WordsOfWondersGameScreen extends JPanel {
                 showFeed("Bonus Word! '" + word + "' added to Jar! +10 pts", UITheme.GOLD);
                 dashboard.addGamePoints(10);
             }
-        } else if (word.length() >= 2) {
+        } else if (word.length() >= 3) {
+            final String candidate = word;
+            com.worldofwonder.util.ApiService.fetchWikiSummary(candidate, summary -> {
+                String extract = summary.get("extract");
+                if (extract != null && !extract.isEmpty()) {
+                    BONUS_DICTIONARY.add(candidate);
+                    bonusWordsFound.add(candidate);
+                    points += 10;
+                    SoundUtil.playHint();
+                    updateMeta();
+                    showFeed("Bonus Dictionary Word! '" + candidate + "' +10 pts", UITheme.GOLD);
+                    dashboard.addGamePoints(10);
+                } else {
+                    SoundUtil.playError();
+                    showFeed("Not in puzzle: " + candidate, UITheme.ERROR);
+                }
+            }, err -> {
+                SoundUtil.playError();
+                showFeed("Not in puzzle: " + candidate, UITheme.ERROR);
+            });
+        } else {
             SoundUtil.playError();
             showFeed("Not in puzzle: " + word, UITheme.ERROR);
         }

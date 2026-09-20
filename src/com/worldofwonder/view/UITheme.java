@@ -3632,7 +3632,7 @@ public final class UITheme {
     }
 
     public enum GameIcon {
-        QUIZ, WORDSEARCH, CUPS, WORDS
+        QUIZ, WORDSEARCH, CUPS, WORDS, MATCH, WHEEL
     }
 
     public static class GameModeCard extends JButton {
@@ -3887,6 +3887,12 @@ public final class UITheme {
                     break;
                 case WORDS:
                     paintWordsIcon(g2, cx, cy, size);
+                    break;
+                case MATCH:
+                    paintWordsIcon(g2, cx, cy, size);
+                    break;
+                case WHEEL:
+                    paintGlobeIcon(g2, cx, cy, size);
                     break;
                 default:
                     break;

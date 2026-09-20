@@ -18,6 +18,7 @@ public class MainUI extends JFrame {
     private static final String SCREEN_WORDSEARCH = "wordsearch";
     private static final String SCREEN_CUPS = "cups";
     private static final String SCREEN_WORDS = "words";
+    private static final String SCREEN_MATCH = "match";
 
     private final CardLayout cards;
     private final JPanel cardsPanel;
@@ -48,6 +49,7 @@ public class MainUI extends JFrame {
         cardsPanel.add(new WordSearchGameScreen(dashboard), SCREEN_WORDSEARCH);
         cardsPanel.add(new CupsWaterSortGameScreen(dashboard), SCREEN_CUPS);
         cardsPanel.add(new WordsOfWondersGameScreen(dashboard), SCREEN_WORDS);
+        cardsPanel.add(new MatchGameScreen(dashboard), SCREEN_MATCH);
 
         this.background = UITheme.animatedRoot(new BorderLayout());
         background.add(cardsPanel, BorderLayout.CENTER);

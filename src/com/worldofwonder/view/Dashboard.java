@@ -132,7 +132,7 @@ public class Dashboard extends JPanel {
         center.add(subtitle);
         center.add(Box.createVerticalStrut(UITheme.GAP_SECTION));
 
-        JPanel games = new JPanel(new GridLayout(2, 2, UITheme.GAP_SECTION, UITheme.GAP_SECTION));
+        JPanel games = new JPanel(new GridLayout(2, 3, UITheme.GAP_SECTION, UITheme.GAP_SECTION));
         games.setOpaque(false);
 
         games.add(gameCard("quiz", UITheme.GameIcon.QUIZ,
@@ -147,8 +147,36 @@ public class Dashboard extends JPanel {
         games.add(gameCard("words", UITheme.GameIcon.WORDS,
                 com.worldofwonder.util.I18n.get("game_words_title"),
                 com.worldofwonder.util.I18n.get("game_words_sub"), UITheme.GOLD));
+        games.add(gameCard("match", UITheme.GameIcon.MATCH,
+                com.worldofwonder.util.I18n.get("game_match_title"),
+                com.worldofwonder.util.I18n.get("game_match_sub"), UITheme.CORAL));
+        games.add(wheelCard());
 
         center.add(games);
+
+        // "Did You Know?" Fact Banner
+        JPanel factBanner = UITheme.roundedBar();
+        factBanner.setLayout(new FlowLayout(FlowLayout.CENTER, 8, 6));
+        factBanner.setMaximumSize(new Dimension(960, 38));
+        factBanner.setPreferredSize(new Dimension(960, 38));
+        factBanner.add(UITheme.vectorIcon(UITheme.VectorIcon.LIGHTBULB, 18, UITheme.GOLD));
+        String defaultFact = com.worldofwonder.util.I18n.isKhmer() 
+                ? "តើអ្នកដឹងទេ? ពីរ៉ាមីតហ្គីហ្សាគឺជាសំណង់ដែលខ្ពស់ជាងគេបំផុតនៅលើពិភពលោកអស់រយៈពេល ៣,៨០០ ឆ្នាំ!"
+                : "Did you know? The Great Pyramid of Giza was the tallest man-made structure for over 3,800 years!";
+        JLabel factText = new JLabel(defaultFact);
+        factText.setFont(UITheme.fontFor(defaultFact, Font.PLAIN, 12));
+        factText.setForeground(new java.awt.Color(0xd0e0ff));
+        factBanner.add(factText);
+        center.add(Box.createVerticalStrut(UITheme.GAP_TIGHT));
+        center.add(factBanner);
+
+        com.worldofwonder.util.ApiService.fetchRandomFact(fact -> {
+            if (fact != null && !fact.isEmpty()) {
+                String prefix = com.worldofwonder.util.I18n.isKhmer() ? "តើអ្នកដឹងទេ? " : "Did you know? ";
+                factText.setText("<html>" + prefix + fact + "</html>");
+            }
+        }, err -> {});
+
         return center;
     }
 
@@ -157,7 +185,22 @@ public class Dashboard extends JPanel {
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         left.setOpaque(false);
-        left.add(UITheme.avatar(isGuest ? "?" : username));
+        JPanel avatarBox = new JPanel(new BorderLayout());
+        avatarBox.setOpaque(false);
+        avatarBox.setPreferredSize(new Dimension(44, 44));
+        avatarBox.add(UITheme.avatar(isGuest ? "?" : username), BorderLayout.CENTER);
+        left.add(avatarBox);
+        if (!isGuest) {
+            com.worldofwonder.util.ApiService.fetchAvatar(username, 44, img -> {
+                if (img != null) {
+                    JLabel pic = new JLabel(new javax.swing.ImageIcon(img.getScaledInstance(44, 44, java.awt.Image.SCALE_SMOOTH)));
+                    avatarBox.removeAll();
+                    avatarBox.add(pic, BorderLayout.CENTER);
+                    avatarBox.revalidate();
+                    avatarBox.repaint();
+                }
+            }, err -> {});
+        }
 
         JPanel userTextBox = new JPanel();
         userTextBox.setOpaque(false);
@@ -201,6 +244,17 @@ public class Dashboard extends JPanel {
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         right.setOpaque(false);
+
+        // Encyclopedia Codex Button
+        JButton encBtn = UITheme.iconPillButton(UITheme.VectorIcon.SEARCH, com.worldofwonder.util.I18n.get("encyclopedia_title"), UITheme.TEAL);
+        encBtn.setFont(UITheme.fontFor(encBtn.getText(), Font.BOLD, 12));
+        UIUtil.fixedSize(encBtn, 115, UITheme.BTN_H);
+        encBtn.setToolTipText("Open World Encyclopedia");
+        encBtn.addActionListener(e -> {
+            SoundUtil.playClick();
+            new EncyclopediaModal(app).setVisible(true);
+        });
+        right.add(encBtn);
 
         // Settings Button with Gear Icon
         JButton settingsBtn = UITheme.iconPillButton(UITheme.VectorIcon.GEAR, com.worldofwonder.util.I18n.get("settings"), UITheme.TEAL);
@@ -286,6 +340,22 @@ public class Dashboard extends JPanel {
         return bar;
     }
 
+    private JButton wheelCard() {
+        UITheme.GameModeCard card = new UITheme.GameModeCard(
+                UITheme.GameIcon.WHEEL,
+                com.worldofwonder.util.I18n.get("wheel_title"),
+                com.worldofwonder.util.I18n.get("wheel_sub"),
+                UITheme.GOLD
+        );
+        card.setBand(new java.awt.Color(0x3a1a00), new java.awt.Color(0xffaa00));
+        UIUtil.flexSize(card, 360, 225, 240, Integer.MAX_VALUE);
+        card.addActionListener(e -> {
+            SoundUtil.playClick();
+            new WorldWheelModal(app, this).setVisible(true);
+        });
+        return card;
+    }
+
     private JButton gameCard(String cardName, UITheme.GameIcon icon, String label, String subtitle, java.awt.Color accent) {
         UITheme.GameModeCard card = new UITheme.GameModeCard(icon, label, subtitle, accent);
         if ("quiz".equals(cardName)) {
@@ -294,10 +364,12 @@ public class Dashboard extends JPanel {
             card.setBand(new java.awt.Color(0x4a1040), new java.awt.Color(0xd04080));
         } else if ("words".equals(cardName)) {
             card.setBand(new java.awt.Color(0x2a1a00), new java.awt.Color(0xd4a020));
+        } else if ("match".equals(cardName)) {
+            card.setBand(new java.awt.Color(0x401020), new java.awt.Color(0xe04060));
         } else {
             card.setBand(new java.awt.Color(0x0a2848), new java.awt.Color(0x20d0c0));
         }
-        UIUtil.flexSize(card, 420, 225, 260, Integer.MAX_VALUE);
+        UIUtil.flexSize(card, 360, 225, 240, Integer.MAX_VALUE);
         card.addActionListener(e -> app.showScreen(cardName));
         return card;
     }

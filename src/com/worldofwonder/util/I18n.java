@@ -301,6 +301,85 @@ public class I18n {
         put("tip_hide_password", "Hide secret password", "លាក់ពាក្យសម្ងាត់");
         put("tip_language", "Switch language / ប្តូរភាសា", "Switch language / ប្តូរភាសា");
 
+        // --- API & Online Features ---
+        put("api_loading", "Loading...", "កំពុងផ្ទុក...");
+        put("api_offline", "Offline Mode", "មុខងារក្រៅបណ្តាញ");
+        put("api_error", "Connection error. Using offline data.", "មានបញ្ហាក្នុងការតភ្ជាប់។ កំពុងប្រើទិន្នន័យក្រៅបណ្តាញ។");
+        put("api_fetching", "Fetching new questions...", "កំពុងទាញយកសំណួរថ្មី...");
+
+        // --- Speed Scoring & Streak ---
+        put("speed_bonus", "Speed Bonus: +{0}", "ពិន្ទុល្បឿន: +{0}");
+        put("streak_multiplier", "{0}x Streak!", "{0}x ជាប់គ្នា!");
+        put("streak_broken", "Streak broken!", "ជាប់គ្នាត្រូវបានបាត់!");
+        put("time_remaining", "Time: {0}s", "ពេល: {0}វិ");
+        put("time_up", "Time's up!", "អស់ពេលហើយ!");
+
+        // --- Power-Ups ---
+        put("powerup_5050", "50:50", "៥០:៥០");
+        put("powerup_freeze", "Freeze Time", "បង្កកពេល");
+        put("powerup_second_chance", "2nd Chance", "ឱកាសម្តងទៀត");
+        put("powerup_skip", "Skip", "រំលង");
+        put("powerup_used", "Power-up used!", "បានប្រើថាមពលពិសេស!");
+        put("powerup_no_coins", "Not enough coins!", "មិនមានកាក់គ្រប់គ្រាន់!");
+
+        // --- Hearts System ---
+        put("hearts_remaining", "Hearts: {0}/5", "បេះដូង: {0}/៥");
+        put("hearts_lost", "Lost a heart!", "បាត់បេះដូង!");
+        put("hearts_empty", "No hearts left! Wait or practice to restore.", "អស់បេះដូងហើយ! សូមរង់ចាំ ឬហាត់ដើម្បីស្ដារឡើងវិញ។");
+        put("hearts_restored", "Hearts restored!", "បេះដូងត្រូវបានស្ដារឡើងវិញ!");
+
+        // --- Daily Streak ---
+        put("streak_title", "Daily Streak", "ការចូលប្រចាំថ្ងៃ");
+        put("streak_days", "{0} day streak!", "ជាប់គ្នា {0} ថ្ងៃ!");
+        put("streak_reward", "+{0} hint coins earned!", "+{0} កាក់ជំនួយទទួលបាន!");
+        put("streak_frozen", "Streak preserved with freeze!", "បានរក្សាការចូលប្រចាំថ្ងៃ!");
+        put("hint_coins", "Hint Coins: {0}", "កាក់ជំនួយ: {0}");
+
+        // --- Avatar ---
+        put("avatar_loading", "Loading avatar...", "កំពុងផ្ទុករូបតំណាង...");
+        put("avatar_default", "Default Avatar", "រូបតំណាងដើម");
+
+        // --- Encyclopedia / World Codex ---
+        put("encyclopedia_title", "World Encyclopedia", "សព្វវចនាធិប្បាយពិភពលោក");
+        put("encyclopedia_sub", "Discover fascinating facts about each world", "ស្វែងយល់ពីការពិតគួរឱ្យចាប់អារម្មណ៍អំពីពិភពនីមួយៗ");
+        put("encyclopedia_unlock", "Beat levels to unlock more!", "ឈ្នះកម្រិតដើម្បីដោះសោបន្ថែម!");
+        put("encyclopedia_locked", "Locked", "ចាក់សោ");
+        put("encyclopedia_read_more", "Read More", "អានបន្ថែម");
+
+        // --- Leaderboard Online ---
+        put("leaderboard_local", "Local", "មូលដ្ឋាន");
+        put("leaderboard_global", "Global", "ពិភពលោក");
+        put("leaderboard_loading", "Loading global scores...", "កំពុងផ្ទុកពិន្ទុពិភពលោក...");
+        put("leaderboard_offline", "Global leaderboard unavailable offline", "តារាងពិន្ទុពិភពលោកមិនអាចប្រើក្រៅបណ្តាញ");
+
+        // --- Match Game ---
+        put("game_match_title", "Match Master", "ផ្គូផ្គងម៉ាស្ទ័រ");
+        put("game_match_sub", "Match words to definitions before time runs out!", "ផ្គូផ្គងពាក្យទៅនិយមន័យមុនពេលអស់ពេល!");
+        put("match_time", "Time: {0}s", "ពេល: {0}វិ");
+        put("match_pairs", "Pairs: {0}/{1}", "គូ: {0}/{1}");
+        put("match_complete", "All pairs matched!", "បានផ្គូផ្គងគូទាំងអស់!");
+        put("match_timeout", "Time's up! {0}/{1} pairs matched.", "អស់ពេលហើយ! {0}/{1} គូត្រូវបានផ្គូផ្គង។");
+
+        // --- World Wheel ---
+        put("wheel_title", "Spin the Wonder Wheel!", "វិលកង់អច្ឆរិយៈ!");
+        put("wheel_sub", "Spin to pick a random world for bonus XP!", "វិលដើម្បីជ្រើសរើសពិភពចៃដន្យសម្រាប់ XP បន្ថែម!");
+        put("wheel_spin", "SPIN!", "វិល!");
+        put("wheel_result", "You got: {0}! Double XP activated!", "អ្នកទទួលបាន: {0}! ពិន្ទុទ្វេដងត្រូវបានដំណើរការ!");
+
+        // --- Fun Facts ---
+        put("did_you_know", "Did you know?", "តើអ្នកដឹងទេ?");
+        put("fun_fact_loading", "Loading fun fact...", "កំពុងផ្ទុកការពិតគួរឱ្យចាប់អារម្មណ៍...");
+        put("score_fact", "You scored {0}! {1}", "អ្នកទទួលបាន {0} ពិន្ទុ! {1}");
+
+        // --- Bonus Words ---
+        put("bonus_words_title", "Bonus Words Jar", "ពាក្យបន្ថែម");
+        put("bonus_word_found", "Bonus word found: {0}! +{1} coins", "ពាក្យបន្ថែមត្រូវបានរកឃើញ: {0}! +{1} កាក់");
+        put("bonus_words_count", "Bonus: {0}", "បន្ថែម: {0}");
+
+        // --- Word Definition ---
+        put("definition_title", "Word Definition", "និយមន័យពាក្យ");
+        put("definition_not_found", "Definition not available", "មិនមាននិយមន័យទេ");
+        put("definition_phonetic", "Pronunciation: {0}", "ការបញ្ចេញសម្លេង: {0}");
     }
 
     private static void put(String key, String en, String km) {
