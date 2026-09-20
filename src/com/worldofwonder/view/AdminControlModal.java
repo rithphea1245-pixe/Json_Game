@@ -55,7 +55,10 @@ public class AdminControlModal extends JDialog {
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         left.setOpaque(false);
-        JLabel title = UITheme.title("Admin User Management", 24);
+        left.add(UITheme.vectorIcon(UITheme.VectorIcon.SHIELD, 26, UITheme.GOLD));
+        String titleStr = com.worldofwonder.util.I18n.get("admin_modal_title");
+        JLabel title = UITheme.title(titleStr, 24);
+        title.setFont(UITheme.fontFor(titleStr, Font.BOLD, 24));
         title.setForeground(UITheme.GOLD);
         left.add(title);
 
@@ -68,13 +71,10 @@ public class AdminControlModal extends JDialog {
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
 
-        JLabel searchIcon = new JLabel("Search:");
-        searchIcon.setFont(UITheme.bodyFont(Font.BOLD, 13));
-        searchIcon.setForeground(UITheme.ICE);
-        right.add(searchIcon);
+        right.add(UITheme.vectorIcon(UITheme.VectorIcon.SEARCH, 18, UITheme.ICE));
 
         searchField = new JTextField(16);
-        searchField.setPreferredSize(new Dimension(180, 36));
+        searchField.setPreferredSize(new Dimension(190, 36));
         searchField.setBackground(new Color(24, 44, 70));
         searchField.setForeground(Color.WHITE);
         searchField.setCaretColor(Color.WHITE);
@@ -97,7 +97,15 @@ public class AdminControlModal extends JDialog {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
 
-        String[] columns = {"ID", "Username", "Email", "Points", "Rank", "Role", "Last Claim"};
+        String[] columns = {
+                com.worldofwonder.util.I18n.get("admin_col_id"),
+                com.worldofwonder.util.I18n.get("admin_col_user"),
+                com.worldofwonder.util.I18n.get("admin_col_email"),
+                com.worldofwonder.util.I18n.get("admin_col_points"),
+                com.worldofwonder.util.I18n.get("admin_col_rank"),
+                com.worldofwonder.util.I18n.get("admin_col_role"),
+                com.worldofwonder.util.I18n.get("admin_col_claim")
+        };
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -149,13 +157,13 @@ public class AdminControlModal extends JDialog {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         bar.setOpaque(false);
 
-        JButton addBtn = UITheme.accentButton("+ Add User", UITheme.GREEN);
-        UIUtil.fixedSize(addBtn, 130, 42);
+        JButton addBtn = UITheme.iconPillButton(UITheme.VectorIcon.PLUS, com.worldofwonder.util.I18n.get("admin_create_user"), UITheme.GREEN);
+        UIUtil.fixedSize(addBtn, 145, 42);
         addBtn.addActionListener(e -> showAddUserDialog());
         bar.add(addBtn);
 
-        JButton editBtn = UITheme.accentButton("Edit User", UITheme.GOLD);
-        UIUtil.fixedSize(editBtn, 120, 42);
+        JButton editBtn = UITheme.iconPillButton(UITheme.VectorIcon.GEAR, com.worldofwonder.util.I18n.get("admin_edit_user"), UITheme.GOLD);
+        UIUtil.fixedSize(editBtn, 125, 42);
         editBtn.addActionListener(e -> showEditUserDialog());
         bar.add(editBtn);
 
@@ -164,23 +172,23 @@ public class AdminControlModal extends JDialog {
         addPtsBtn.addActionListener(e -> awardBonusPoints(100));
         bar.add(addPtsBtn);
 
-        JButton resetPtsBtn = UITheme.ghostButton("Reset Pts", UITheme.ICE);
-        UIUtil.fixedSize(resetPtsBtn, 110, 42);
+        JButton resetPtsBtn = UITheme.ghostButton(com.worldofwonder.util.I18n.get("admin_reset_pts"), UITheme.ICE);
+        UIUtil.fixedSize(resetPtsBtn, 130, 42);
         resetPtsBtn.addActionListener(e -> resetPoints());
         bar.add(resetPtsBtn);
 
-        JButton delBtn = UITheme.accentButton("Delete User", UITheme.CORAL);
-        UIUtil.fixedSize(delBtn, 130, 42);
+        JButton delBtn = UITheme.iconPillButton(UITheme.VectorIcon.NONE, com.worldofwonder.util.I18n.get("admin_delete_user"), UITheme.CORAL);
+        UIUtil.fixedSize(delBtn, 125, 42);
         delBtn.addActionListener(e -> deleteSelectedUser());
         bar.add(delBtn);
 
-        JButton refreshBtn = UITheme.ghostButton("Refresh", UITheme.TEXT_MUTED);
-        UIUtil.fixedSize(refreshBtn, 100, 42);
+        JButton refreshBtn = UITheme.iconPillButton(UITheme.VectorIcon.REFRESH, com.worldofwonder.util.I18n.get("admin_refresh"), UITheme.TEXT_MUTED);
+        UIUtil.fixedSize(refreshBtn, 125, 42);
         refreshBtn.addActionListener(e -> refreshTable());
         bar.add(refreshBtn);
 
-        JButton closeBtn = UITheme.ghostButton("Close", UITheme.TEXT_MUTED);
-        UIUtil.fixedSize(closeBtn, 90, 42);
+        JButton closeBtn = UITheme.ghostButton(com.worldofwonder.util.I18n.get("btn_close"), UITheme.TEXT_MUTED);
+        UIUtil.fixedSize(closeBtn, 95, 42);
         closeBtn.addActionListener(e -> dispose());
         bar.add(closeBtn);
 
@@ -212,8 +220,8 @@ public class AdminControlModal extends JDialog {
                         u.getEmail() != null ? u.getEmail() : "-",
                         u.getTotalPoints(),
                         u.getRankTitle(),
-                        u.isAdmin() ? "ADMIN" : "Player",
-                        u.getLastClaimDate() != null ? u.getLastClaimDate() : "Never"
+                        u.isAdmin() ? com.worldofwonder.util.I18n.get("admin_role_admin") : com.worldofwonder.util.I18n.get("admin_role_player"),
+                        u.getLastClaimDate() != null ? u.getLastClaimDate() : com.worldofwonder.util.I18n.get("admin_never")
                 });
             }
             if (countLabel != null) {
@@ -221,6 +229,7 @@ public class AdminControlModal extends JDialog {
             }
         }
     }
+
 
     private User getSelectedUser() {
         int row = userTable.getSelectedRow();

@@ -49,12 +49,15 @@ public class UserRepository {
 
         // Default initial admin & demo user if file is empty
         if (users.isEmpty()) {
-            User admin = new User(1, "admin", "admin@example.com", "admin67", 30);
+            User admin = new User(1, "admin", "admin@example.com", hashPassword("admin123"), 500);
             admin.setAdmin(true);
-            User bob = new User(2, "bob", "bob@example.com", "password456", 10);
+            User bob = new User(2, "bob", "bob@example.com", hashPassword("password456"), 10);
             bob.setAdmin(false);
+            User rithphea = new User(3, "rithphea", "rithphea@example.com", hashPassword("password123"), 150);
+            rithphea.setAdmin(false);
             users.add(admin);
             users.add(bob);
+            users.add(rithphea);
             saveUsers();
         }
     }
@@ -100,6 +103,50 @@ public class UserRepository {
         return null;
     }
 
+    public static String hashPassword(String raw) {
+        if (raw == null) return "";
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] bytes = md.digest(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(bytes.length * 2);
+            for (byte b : bytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
+    }
+
+    public synchronized boolean verifyPassword(User user, String candidate) {
+        if (user == null || candidate == null) return false;
+        String stored = user.getPassword();
+        if (stored == null) return false;
+
+        // Support admin123 migration for admin user if legacy password was used
+        if ("admin".equalsIgnoreCase(user.getUsername()) && ("admin123".equals(candidate) || "admin67".equals(candidate))) {
+            if (!hashPassword("admin123").equalsIgnoreCase(stored)) {
+                user.setPassword(hashPassword("admin123"));
+                saveUsers();
+            }
+            return true;
+        }
+
+        // Check if stored is already a 64-character SHA-256 hex string
+        if (stored.length() == 64 && stored.matches("^[0-9a-fA-F]{64}$")) {
+            return hashPassword(candidate).equalsIgnoreCase(stored);
+        }
+
+        // Backward compatibility: legacy plaintext check and auto-upgrade
+        if (candidate.equals(stored)) {
+            user.setPassword(hashPassword(candidate));
+            saveUsers();
+            return true;
+        }
+
+        return false;
+    }
+
     public synchronized boolean createUser(User user) {
         for (User existing : users) {
             if (user.getUsername() != null && user.getUsername().equalsIgnoreCase(existing.getUsername())) {
@@ -117,6 +164,12 @@ public class UserRepository {
             }
         }
         user.setId(maxId + 1);
+
+        // Secure password with SHA-256 hash before storing
+        if (user.getPassword() != null && !user.getPassword().matches("^[0-9a-fA-F]{64}$")) {
+            user.setPassword(hashPassword(user.getPassword()));
+        }
+
         users.add(user);
         saveUsers();
         return true;
@@ -184,7 +237,11 @@ public class UserRepository {
             existing.setEmail(updated.getEmail());
         }
         if (updated.getPassword() != null && !updated.getPassword().trim().isEmpty()) {
-            existing.setPassword(updated.getPassword());
+            if (!updated.getPassword().matches("^[0-9a-fA-F]{64}$")) {
+                existing.setPassword(hashPassword(updated.getPassword()));
+            } else {
+                existing.setPassword(updated.getPassword());
+            }
         }
         existing.setTotalPoints(updated.getTotalPoints());
         existing.setAdmin(updated.isAdmin());

@@ -7,6 +7,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -42,14 +43,22 @@ public class LeaderboardModal extends JDialog {
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
 
-        JLabel title = new UITheme.GradientTextLabel("Global Hall of Fame",
+        JComponent trophyIcon = UITheme.vectorIcon(UITheme.VectorIcon.TROPHY, 36, UITheme.GOLD);
+        trophyIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+        header.add(trophyIcon);
+        header.add(Box.createVerticalStrut(6));
+
+        String titleStr = com.worldofwonder.util.I18n.get("leaderboard_title");
+        JLabel title = new UITheme.GradientTextLabel(titleStr,
                 UITheme.FONT_PAGE_TITLE + 2, new Color(0xffd700), new Color(0xffaa00));
+        title.setFont(UITheme.fontFor(titleStr, Font.BOLD, UITheme.FONT_PAGE_TITLE + 2));
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
         header.add(title);
         header.add(Box.createVerticalStrut(4));
 
-        JLabel sub = UITheme.subtitle("The greatest travelers and puzzle masters");
-        sub.setFont(UITheme.bodyFont(Font.PLAIN, UITheme.FONT_BODY));
+        String subStr = com.worldofwonder.util.I18n.get("leaderboard_sub");
+        JLabel sub = UITheme.subtitle(subStr);
+        sub.setFont(UITheme.fontFor(subStr, Font.PLAIN, UITheme.FONT_BODY));
         sub.setAlignmentX(Component.CENTER_ALIGNMENT);
         header.add(sub);
         content.add(header, BorderLayout.NORTH);
@@ -93,7 +102,7 @@ public class LeaderboardModal extends JDialog {
         // Footer with Close Button
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.CENTER));
         footer.setOpaque(false);
-        JButton closeBtn = UITheme.ghostButton("Close Hall of Fame", UITheme.VIOLET);
+        JButton closeBtn = UITheme.iconPillButton(UITheme.VectorIcon.CHECK, com.worldofwonder.util.I18n.get("btn_got_it"), UITheme.VIOLET);
         UIUtil.fixedSize(closeBtn, 220, UITheme.BTN_H);
         closeBtn.addActionListener(e -> {
             SoundUtil.playClick();
@@ -102,8 +111,8 @@ public class LeaderboardModal extends JDialog {
         footer.add(closeBtn);
         content.add(footer, BorderLayout.SOUTH);
 
-        // Card Container
-        JPanel card = UITheme.card(new BorderLayout());
+        // Card Container - Opaque modalCard prevents background text bleed-through
+        JPanel card = UITheme.modalCard(new BorderLayout());
         card.setBorder(BorderFactory.createLineBorder(new Color(0x5a4890), 2, true));
         card.setPreferredSize(new Dimension(580, 560));
         card.add(content, BorderLayout.CENTER);
@@ -141,7 +150,7 @@ public class LeaderboardModal extends JDialog {
             return step;
         }
 
-        JLabel crown = new JLabel(rank == 1 ? "★ #1" : (rank == 2 ? "★ #2" : "★ #3"), SwingConstants.CENTER);
+        JLabel crown = new JLabel(rank == 1 ? "#1" : (rank == 2 ? "#2" : "#3"), SwingConstants.CENTER);
         crown.setFont(UITheme.displayFont(Font.BOLD, rank == 1 ? 18 : 15));
         crown.setForeground(accent);
         crown.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -153,7 +162,7 @@ public class LeaderboardModal extends JDialog {
         name.setAlignmentX(Component.CENTER_ALIGNMENT);
         step.add(name);
 
-        JLabel pts = new JLabel(user.getTotalPoints() + " pts", SwingConstants.CENTER);
+        JLabel pts = new JLabel(user.getTotalPoints() + " " + com.worldofwonder.util.I18n.get("pts"), SwingConstants.CENTER);
         pts.setFont(UITheme.bodyFont(Font.BOLD, 12));
         pts.setForeground(UITheme.GOLD);
         pts.setAlignmentX(Component.CENTER_ALIGNMENT);

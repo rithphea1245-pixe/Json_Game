@@ -44,6 +44,7 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.MouseAdapter;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -116,6 +117,7 @@ public final class UITheme {
     private static final String DISPLAY_FAMILY;
     private static final String BODY_FAMILY;
     private static final String EMOJI_FAMILY;
+    public static final String KHMER_FAMILY;
 
     static {
         List<String> available = Arrays.asList(
@@ -128,6 +130,8 @@ public final class UITheme {
                 "Segoe UI", "Segoe UI Variable Text", "Calibri", "Verdana",
                 "Nunito", "Ubuntu", "Noto Sans", "SansSerif"});
         EMOJI_FAMILY = resolveEmojiFamily(available);
+        KHMER_FAMILY = firstAvailable(available, new String[]{
+                "Noto Sans Khmer UI", "Noto Sans Khmer", "Khmer UI", "Siemreap", "Suwannaphum", "Nokora", "Leelawadee UI", "SansSerif"});
     }
 
     private static String firstAvailable(List<String> available, String[] candidates) {
@@ -159,12 +163,55 @@ public final class UITheme {
         return EMOJI_FAMILY != null ? new Font(EMOJI_FAMILY, Font.PLAIN, size) : displayFont(Font.BOLD, size);
     }
 
+    public static boolean hasKhmer(String text) {
+        if (text == null) return false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if ((c >= '\u1780' && c <= '\u17FF') || (c >= '\u19E0' && c <= '\u19FF')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean hasLatin(String text) {
+        if (text == null) return false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static Font displayFont(int style, int size) {
+        if (com.worldofwonder.util.I18n.isKhmer()) {
+            return new Font(Font.SANS_SERIF, style, size);
+        }
         return new Font(DISPLAY_FAMILY, style, size);
     }
 
     public static Font bodyFont(int style, int size) {
+        if (com.worldofwonder.util.I18n.isKhmer()) {
+            return new Font(Font.SANS_SERIF, style, size);
+        }
         return new Font(BODY_FAMILY, style, size);
+    }
+
+    public static Font fontFor(String text, int style, int size) {
+        if (text == null || text.isEmpty()) {
+            return com.worldofwonder.util.I18n.isKhmer() ? new Font(Font.SANS_SERIF, style, size) : new Font(BODY_FAMILY, style, size);
+        }
+        boolean khmer = hasKhmer(text);
+        boolean latin = hasLatin(text);
+        if (khmer && !latin) {
+            return new Font(KHMER_FAMILY, style, size);
+        }
+        if (khmer && latin) {
+            return new Font(Font.SANS_SERIF, style, size);
+        }
+        return com.worldofwonder.util.I18n.isKhmer() ? new Font(Font.SANS_SERIF, style, size) : new Font(DISPLAY_FAMILY, style, size);
     }
 
     private static final List<float[]> STARS = buildStars();
@@ -473,6 +520,50 @@ public final class UITheme {
                     g2.setStroke(new BasicStroke(1.6f));
                     g2.setColor(new Color(255, 255, 255, 80));
                     g2.draw(new RoundRectangle2D.Float(1.2f, 1.2f, w - 2.4f, h - 2.4f, CARD_RADIUS, CARD_RADIUS));
+                    g2.setClip(null);
+                    g2.dispose();
+                }
+                g.drawImage(chrome, 0, 0, null);
+            }
+        };
+        panel.setOpaque(false);
+        return panel;
+    }
+
+    /** Fully opaque, high-contrast modal dialog card that blocks background text completely. */
+    public static JPanel modalCard(LayoutManager layout) {
+        JPanel panel = new JPanel(layout) {
+            private BufferedImage chrome;
+            private int chromeW = -1;
+            private int chromeH = -1;
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                int w = getWidth();
+                int h = getHeight();
+                if (w <= 0 || h <= 0) return;
+                if (chrome == null || chromeW != w || chromeH != h) {
+                    chromeW = w;
+                    chromeH = h;
+                    chrome = new BufferedImage(Math.max(1, w), Math.max(1, h), BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D g2 = chrome.createGraphics();
+                    quality(g2);
+                    softShadow(g2, 0, 0, w, h, 24);
+                    // Solid dark slate gradient - 100% opaque, zero bleed-through
+                    g2.setPaint(new LinearGradientPaint(0, 0, 0, h,
+                            new float[]{0f, 0.5f, 1f},
+                            new Color[]{new Color(15, 23, 42), new Color(13, 22, 38), new Color(10, 16, 29)}));
+                    g2.fillRoundRect(0, 0, w, h, CARD_RADIUS, CARD_RADIUS);
+
+                    // Crisp high-contrast border
+                    g2.setColor(new Color(56, 77, 117));
+                    g2.setStroke(new BasicStroke(1.5f));
+                    g2.drawRoundRect(1, 1, w - 3, h - 3, CARD_RADIUS, CARD_RADIUS);
+
+                    // Subtle top edge highlight
+                    g2.setColor(new Color(255, 255, 255, 30));
+                    g2.setClip(0, 0, w, 3);
+                    g2.drawRoundRect(1, 1, w - 3, h - 3, CARD_RADIUS, CARD_RADIUS);
                     g2.setClip(null);
                     g2.dispose();
                 }
@@ -1150,12 +1241,12 @@ public final class UITheme {
         JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         east.setOpaque(false);
 
-        JButton soundBtn = ghostButton(SoundUtil.isMuted() ? "\uD83D\uDD07" : "\uD83D\uDD0A", TEAL);
-        UIUtil.fixedSize(soundBtn, 56, BTN_H_SM);
+        JButton soundBtn = ghostButton(SoundUtil.isMuted() ? "SFX: OFF" : "SFX: ON", TEAL);
+        UIUtil.fixedSize(soundBtn, 95, BTN_H_SM);
         soundBtn.setToolTipText("Toggle Sound Effects");
         soundBtn.addActionListener(e -> {
             SoundUtil.toggleMute();
-            soundBtn.setText(SoundUtil.isMuted() ? "\uD83D\uDD07" : "\uD83D\uDD0A");
+            soundBtn.setText(SoundUtil.isMuted() ? "SFX: OFF" : "SFX: ON");
             if (!SoundUtil.isMuted()) {
                 SoundUtil.playClick();
             }
@@ -1692,6 +1783,16 @@ public final class UITheme {
             selected = 0;
         }
 
+        public void setLabels(String[] newLabels) {
+            if (newLabels != null) {
+                for (int i = 0; i < Math.min(buttons.length, newLabels.length); i++) {
+                    buttons[i].setText(newLabels[i]);
+                    buttons[i].setFont(fontFor(newLabels[i], Font.BOLD, 16));
+                }
+                repaint();
+            }
+        }
+
         public void select(int index) {
             if (index < 0 || index >= buttons.length) {
                 return;
@@ -1929,46 +2030,537 @@ public final class UITheme {
         return button;
     }
 
-    public static JTextField pillField(String placeholder, String icon) {
+    public enum VectorIcon {
+        NONE,
+        USER,
+        EMAIL,
+        PASSWORD,
+        EYE,
+        EYE_OFF,
+        GLOBE,
+        GEAR,
+        GIFT,
+        TROPHY,
+        SHIELD,
+        SEARCH,
+        LIGHTBULB,
+        RADAR,
+        SHUFFLE,
+        CHECK,
+        SPEAKER_ON,
+        SPEAKER_OFF,
+        ARROW_LEFT,
+        ARROW_RIGHT,
+        PLUS,
+        REFRESH,
+        LOGOUT
+    }
+
+    public static void drawVectorIcon(Graphics2D g2, VectorIcon icon, int x, int y, int size, Color color) {
+        if (icon == null || icon == VectorIcon.NONE) return;
+        Graphics2D g = (Graphics2D) g2.create();
+        paintQuality(g);
+        g.setColor(color);
+        switch (icon) {
+            case USER: {
+                int headR = size * 44 / 100;
+                int headX = x + (size - headR) / 2;
+                int headY = y + size * 4 / 100;
+                g.fillOval(headX, headY, headR, headR);
+                int shW = size * 82 / 100;
+                int shH = size * 54 / 100;
+                int shX = x + (size - shW) / 2;
+                int shY = y + size * 48 / 100;
+                g.fillArc(shX, shY, shW, shH, 0, 180);
+                break;
+            }
+            case EMAIL: {
+                g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int ew = size * 82 / 100;
+                int eh = size * 58 / 100;
+                int ex = x + (size - ew) / 2;
+                int ey = y + (size - eh) / 2;
+                g.drawRoundRect(ex, ey, ew, eh, 4, 4);
+                int[] vx = {ex + 1, ex + ew / 2, ex + ew - 1};
+                int[] vy = {ey + 2, ey + eh * 54 / 100, ey + 2};
+                g.drawPolyline(vx, vy, 3);
+                break;
+            }
+            case PASSWORD: {
+                int pw = size * 70 / 100;
+                int ph = size * 50 / 100;
+                int px = x + (size - pw) / 2;
+                int py = y + size * 44 / 100;
+                g.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int sw = size * 42 / 100;
+                int sh = size * 42 / 100;
+                int sx = x + (size - sw) / 2;
+                int sy = y + size * 8 / 100;
+                g.drawArc(sx, sy, sw, sh, 0, 180);
+                g.drawLine(sx, sy + sh / 2, sx, py + 2);
+                g.drawLine(sx + sw, sy + sh / 2, sx + sw, py + 2);
+                g.fillRoundRect(px, py, pw, ph, 6, 6);
+                g.setColor(new Color(15, 23, 42));
+                int khR = size * 14 / 100;
+                g.fillOval(x + (size - khR) / 2, py + ph * 22 / 100, khR, khR);
+                g.fillRect(x + size * 47 / 100, py + ph * 34 / 100, Math.max(2, size * 6 / 100), ph * 36 / 100);
+                break;
+            }
+            case EYE: {
+                g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int ew = size * 86 / 100;
+                int eh = size * 46 / 100;
+                int ex = x + (size - ew) / 2;
+                int ey = y + (size - eh) / 2;
+                g.drawArc(ex, ey - eh / 2, ew, eh * 2, 215, 110);
+                g.drawArc(ex, ey - eh / 2, ew, eh * 2, 35, 110);
+                int pR = size * 22 / 100;
+                g.fillOval(x + (size - pR) / 2, y + (size - pR) / 2, pR, pR);
+                break;
+            }
+            case EYE_OFF: {
+                drawVectorIcon(g, VectorIcon.EYE, x, y, size, color);
+                g.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawLine(x + size * 16 / 100, y + size * 84 / 100, x + size * 84 / 100, y + size * 16 / 100);
+                break;
+            }
+            case GLOBE: {
+                g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int pad = Math.max(2, size * 8 / 100);
+                int d = size - 2 * pad;
+                g.drawOval(x + pad, y + pad, d, d);
+                g.drawLine(x + pad, y + size / 2, x + pad + d, y + size / 2);
+                int mw = Math.max(4, d * 48 / 100);
+                g.drawOval(x + (size - mw) / 2, y + pad, mw, d);
+                g.drawLine(x + size / 2, y + pad, x + size / 2, y + pad + d);
+                break;
+            }
+            case GEAR: {
+                int cx = x + size / 2;
+                int cy = y + size / 2;
+                int rOut = size * 42 / 100;
+                int rIn = size * 30 / 100;
+                int rHole = size * 14 / 100;
+                g.setStroke(new BasicStroke(Math.max(2f, size * 0.16f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawOval(cx - rIn, cy - rIn, rIn * 2, rIn * 2);
+                for (int i = 0; i < 6; i++) {
+                    double angle = i * Math.PI / 3;
+                    int x1 = cx + (int) Math.round((rIn - 1) * Math.cos(angle));
+                    int y1 = cy + (int) Math.round((rIn - 1) * Math.sin(angle));
+                    int x2 = cx + (int) Math.round(rOut * Math.cos(angle));
+                    int y2 = cy + (int) Math.round(rOut * Math.sin(angle));
+                    g.drawLine(x1, y1, x2, y2);
+                }
+                g.fillOval(cx - rHole, cy - rHole, rHole * 2, rHole * 2);
+                break;
+            }
+            case GIFT: {
+                int bw = size * 74 / 100;
+                int bh = size * 52 / 100;
+                int bx = x + (size - bw) / 2;
+                int by = y + size * 40 / 100;
+                int lw = size * 84 / 100;
+                int lh = size * 16 / 100;
+                int lx = x + (size - lw) / 2;
+                int ly = by - lh;
+                // Box
+                g.fillRoundRect(bx, by, bw, bh, 4, 4);
+                // Lid
+                g.fillRoundRect(lx, ly, lw, lh, 4, 4);
+                // Ribbon vertical
+                Color ribbonColor = new Color(255, 255, 255, 180);
+                g.setColor(ribbonColor);
+                int rw = Math.max(2, size * 14 / 100);
+                g.fillRect(x + (size - rw) / 2, ly, rw, lh + bh);
+                // Ribbon bow on top
+                g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int bowW = size * 22 / 100;
+                int bowH = size * 14 / 100;
+                int cx = x + size / 2;
+                g.drawOval(cx - bowW, ly - bowH + 1, bowW, bowH);
+                g.drawOval(cx, ly - bowH + 1, bowW, bowH);
+                break;
+            }
+            case TROPHY: {
+                int cx = x + size / 2;
+                int cupW = size * 54 / 100;
+                int cupH = size * 44 / 100;
+                int cupX = cx - cupW / 2;
+                int cupY = y + size * 14 / 100;
+                // Cup bowl
+                g.fillRoundRect(cupX, cupY, cupW, cupH * 70 / 100, 6, 6);
+                int[] bx = {cupX, cx, cupX + cupW};
+                int[] by = {cupY + cupH * 60 / 100, cupY + cupH, cupY + cupH * 60 / 100};
+                g.fillPolygon(bx, by, 3);
+                // Handles
+                g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int hW = size * 18 / 100;
+                g.drawArc(cupX - hW + 2, cupY + 2, hW * 2, cupH * 55 / 100, 90, 180);
+                g.drawArc(cupX + cupW - hW - 2, cupY + 2, hW * 2, cupH * 55 / 100, 270, 180);
+                // Stem
+                int stemW = Math.max(3, size * 12 / 100);
+                int stemH = size * 16 / 100;
+                int stemY = cupY + cupH - 2;
+                g.fillRect(cx - stemW / 2, stemY, stemW, stemH);
+                // Base
+                int baseW = size * 62 / 100;
+                int baseH = size * 14 / 100;
+                g.fillRoundRect(cx - baseW / 2, stemY + stemH - 2, baseW, baseH, 4, 4);
+                break;
+            }
+            case SHIELD: {
+                int sw = size * 74 / 100;
+                int sh = size * 82 / 100;
+                int sx = x + (size - sw) / 2;
+                int sy = y + size * 10 / 100;
+                java.awt.geom.Path2D.Float path = new java.awt.geom.Path2D.Float();
+                path.moveTo(sx, sy);
+                path.lineTo(sx + sw, sy);
+                path.curveTo(sx + sw, sy + sh * 55 / 100, sx + sw * 60 / 100, sy + sh * 85 / 100, sx + sw / 2, sy + sh);
+                path.curveTo(sx + sw * 40 / 100, sy + sh * 85 / 100, sx, sy + sh * 55 / 100, sx, sy);
+                path.closePath();
+                g.fill(path);
+                // Inner highlight star or cross
+                g.setColor(new Color(15, 23, 42, 180));
+                g.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int cx = sx + sw / 2;
+                g.drawLine(cx, sy + sh * 25 / 100, cx, sy + sh * 68 / 100);
+                g.drawLine(sx + sw * 28 / 100, sy + sh * 45 / 100, sx + sw * 72 / 100, sy + sh * 45 / 100);
+                break;
+            }
+            case SEARCH: {
+                g.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int r = size * 50 / 100;
+                int lx = x + size * 12 / 100;
+                int ly = y + size * 12 / 100;
+                g.drawOval(lx, ly, r, r);
+                int hx1 = lx + r * 82 / 100;
+                int hy1 = ly + r * 82 / 100;
+                int hx2 = x + size * 86 / 100;
+                int hy2 = y + size * 86 / 100;
+                g.setStroke(new BasicStroke(2.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawLine(hx1, hy1, hx2, hy2);
+                break;
+            }
+            case LIGHTBULB: {
+                g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int cx = x + size / 2;
+                int br = size * 26 / 100;
+                int by = y + size * 30 / 100;
+                g.drawOval(cx - br, by - br, br * 2, br * 2);
+                // base neck
+                int nw = size * 28 / 100;
+                int ny = by + br - 2;
+                int nh = size * 26 / 100;
+                g.fillRoundRect(cx - nw / 2, ny, nw, nh, 3, 3);
+                // rays
+                g.drawLine(cx, y + size * 4 / 100, cx, y + size * 12 / 100);
+                g.drawLine(cx - br - 4, by, cx - br, by);
+                g.drawLine(cx + br, by, cx + br + 4, by);
+                break;
+            }
+            case RADAR: {
+                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int pad = Math.max(2, size * 8 / 100);
+                int d = size - 2 * pad;
+                int cx = x + size / 2;
+                int cy = y + size / 2;
+                g.drawOval(x + pad, y + pad, d, d);
+                int d2 = d * 55 / 100;
+                g.drawOval(cx - d2 / 2, cy - d2 / 2, d2, d2);
+                // Crosshairs
+                g.drawLine(cx, y + pad, cx, y + pad + d);
+                g.drawLine(x + pad, cy, x + pad + d, cy);
+                // Sweep blip line
+                g.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int bx = cx + (int) Math.round(d / 2.3 * 0.707);
+                int by_ = cy - (int) Math.round(d / 2.3 * 0.707);
+                g.drawLine(cx, cy, bx, by_);
+                g.fillOval(bx - 2, by_ - 2, 4, 4);
+                break;
+            }
+            case SHUFFLE: {
+                // Two smooth curved crossing arrows
+                g.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int x1 = x + size * 16 / 100;
+                int x2 = x + size * 84 / 100;
+                int yTop = y + size * 30 / 100;
+                int yBot = y + size * 70 / 100;
+                int midX = x + size / 2;
+
+                java.awt.geom.Path2D.Float p1 = new java.awt.geom.Path2D.Float();
+                p1.moveTo(x1, yTop);
+                p1.curveTo(midX, yTop, midX, yBot, x2, yBot);
+                g.draw(p1);
+                g.drawLine(x2, yBot, x2 - size * 16 / 100, yBot - size * 12 / 100);
+                g.drawLine(x2, yBot, x2 - size * 16 / 100, yBot + size * 12 / 100);
+
+                java.awt.geom.Path2D.Float p2 = new java.awt.geom.Path2D.Float();
+                p2.moveTo(x1, yBot);
+                p2.curveTo(midX, yBot, midX, yTop, x2, yTop);
+                g.draw(p2);
+                g.drawLine(x2, yTop, x2 - size * 16 / 100, yTop - size * 12 / 100);
+                g.drawLine(x2, yTop, x2 - size * 16 / 100, yTop + size * 12 / 100);
+                break;
+            }
+            case CHECK: {
+                g.setStroke(new BasicStroke(2.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int[] cx_ = {x + size * 20 / 100, x + size * 44 / 100, x + size * 82 / 100};
+                int[] cy_ = {y + size * 52 / 100, y + size * 76 / 100, y + size * 26 / 100};
+                g.drawPolyline(cx_, cy_, 3);
+                break;
+            }
+            case SPEAKER_ON: {
+                g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int sx = x + size * 14 / 100;
+                int sy = y + size * 34 / 100;
+                int sw = size * 18 / 100;
+                int sh = size * 32 / 100;
+                g.fillRect(sx, sy, sw, sh);
+                int[] fx = {sx + sw, x + size * 52 / 100, x + size * 52 / 100, sx + sw};
+                int[] fy = {sy, y + size * 18 / 100, y + size * 82 / 100, sy + sh};
+                g.fillPolygon(fx, fy, 4);
+                g.drawArc(x + size * 36 / 100, y + size * 32 / 100, size * 36 / 100, size * 36 / 100, -50, 100);
+                g.drawArc(x + size * 36 / 100, y + size * 20 / 100, size * 54 / 100, size * 60 / 100, -50, 100);
+                break;
+            }
+            case SPEAKER_OFF: {
+                g.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int sx = x + size * 14 / 100;
+                int sy = y + size * 34 / 100;
+                int sw = size * 18 / 100;
+                int sh = size * 32 / 100;
+                g.fillRect(sx, sy, sw, sh);
+                int[] fx = {sx + sw, x + size * 52 / 100, x + size * 52 / 100, sx + sw};
+                int[] fy = {sy, y + size * 18 / 100, y + size * 82 / 100, sy + sh};
+                g.fillPolygon(fx, fy, 4);
+                g.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g.drawLine(x + size * 64 / 100, y + size * 30 / 100, x + size * 86 / 100, y + size * 70 / 100);
+                g.drawLine(x + size * 86 / 100, y + size * 30 / 100, x + size * 64 / 100, y + size * 70 / 100);
+                break;
+            }
+            case ARROW_LEFT: {
+                g.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int midY = y + size / 2;
+                int leftX = x + size * 20 / 100;
+                int rightX = x + size * 80 / 100;
+                g.drawLine(leftX, midY, rightX, midY);
+                g.drawLine(leftX, midY, leftX + size * 26 / 100, midY - size * 26 / 100);
+                g.drawLine(leftX, midY, leftX + size * 26 / 100, midY + size * 26 / 100);
+                break;
+            }
+            case ARROW_RIGHT: {
+                g.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int midY = y + size / 2;
+                int leftX = x + size * 20 / 100;
+                int rightX = x + size * 80 / 100;
+                g.drawLine(leftX, midY, rightX, midY);
+                g.drawLine(rightX, midY, rightX - size * 26 / 100, midY - size * 26 / 100);
+                g.drawLine(rightX, midY, rightX - size * 26 / 100, midY + size * 26 / 100);
+                break;
+            }
+            case PLUS: {
+                g.setStroke(new BasicStroke(2.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int cx = x + size / 2;
+                int cy = y + size / 2;
+                int arm = size * 32 / 100;
+                g.drawLine(cx - arm, cy, cx + arm, cy);
+                g.drawLine(cx, cy - arm, cx, cy + arm);
+                break;
+            }
+            case REFRESH: {
+                g.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int pad = Math.max(3, size * 16 / 100);
+                int d = size - 2 * pad;
+                g.drawArc(x + pad, y + pad, d, d, 45, 270);
+                int ax = x + pad + d * 85 / 100;
+                int ay = y + pad + d * 15 / 100;
+                g.drawLine(ax, ay, ax + size * 16 / 100, ay);
+                g.drawLine(ax, ay, ax, ay - size * 16 / 100);
+                break;
+            }
+            case LOGOUT: {
+                g.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                int dx = x + size * 16 / 100;
+                int dy = y + size * 16 / 100;
+                int dw = size * 42 / 100;
+                int dh = size * 68 / 100;
+                // Door frame
+                g.drawLine(dx + dw, dy, dx, dy);
+                g.drawLine(dx, dy, dx, dy + dh);
+                g.drawLine(dx, dy + dh, dx + dw, dy + dh);
+                // Exit arrow
+                int ax1 = dx + dw * 45 / 100;
+                int ax2 = x + size * 86 / 100;
+                int ay = y + size / 2;
+                g.drawLine(ax1, ay, ax2, ay);
+                g.drawLine(ax2, ay, ax2 - size * 16 / 100, ay - size * 16 / 100);
+                g.drawLine(ax2, ay, ax2 - size * 16 / 100, ay + size * 16 / 100);
+                break;
+            }
+        }
+        g.dispose();
+    }
+
+    public enum FieldIcon {
+        NONE,
+        USER,
+        EMAIL,
+        PASSWORD
+    }
+
+    public static void drawFieldIcon(Graphics2D g2, FieldIcon icon, int x, int y, int size, Color color) {
+        if (icon == null || icon == FieldIcon.NONE) return;
+        drawVectorIcon(g2, VectorIcon.valueOf(icon.name()), x, y, size, color);
+    }
+
+    public static JComponent vectorIcon(VectorIcon icon, int size, Color color) {
+        return new JComponent() {
+            {
+                setPreferredSize(new Dimension(size, size));
+                setMinimumSize(new Dimension(size, size));
+                setMaximumSize(new Dimension(size, size));
+                setOpaque(false);
+            }
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                drawVectorIcon(g2, icon, 0, 0, size, color);
+                g2.dispose();
+            }
+        };
+    }
+
+    public static JButton iconPillButton(VectorIcon icon, String text, Color accent) {
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                quality(g2);
+                int w = getWidth();
+                int h = getHeight();
+                boolean hovered = getModel().isRollover();
+                boolean pressed = getModel().isPressed();
+
+                Color bg = pressed ? new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 70)
+                        : (hovered ? new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 40)
+                                   : new Color(255, 255, 255, 14));
+                g2.setColor(bg);
+                g2.fillRoundRect(0, 0, w, h, h, h);
+
+                g2.setColor(hovered ? accent : new Color(255, 255, 255, 45));
+                g2.setStroke(new BasicStroke(hovered ? 1.6f : 1.0f));
+                g2.drawRoundRect(0, 0, w - 1, h - 1, h, h);
+
+                Font font = fontFor(getText(), Font.BOLD, 13);
+                g2.setFont(font);
+                FontMetrics fm = g2.getFontMetrics();
+                int iconSize = Math.max(16, h * 38 / 100);
+                int textW = fm.stringWidth(getText());
+                int gap = (icon != null && icon != VectorIcon.NONE && !getText().isEmpty()) ? 8 : 0;
+                int contentW = (icon != null && icon != VectorIcon.NONE ? iconSize : 0) + gap + textW;
+                int startX = (w - contentW) / 2;
+
+                if (icon != null && icon != VectorIcon.NONE) {
+                    drawVectorIcon(g2, icon, startX, (h - iconSize) / 2, iconSize, hovered ? accent : TEXT);
+                    startX += iconSize + gap;
+                }
+
+                g2.setColor(hovered ? Color.WHITE : TEXT_MUTED);
+                g2.drawString(getText(), startX, (h - fm.getHeight()) / 2 + fm.getAscent());
+                g2.dispose();
+            }
+        };
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setOpaque(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return button;
+    }
+
+    public static JButton backButton(String text, Color accent) {
+        return iconPillButton(VectorIcon.ARROW_LEFT, text, accent);
+    }
+
+    public static PillField pillField(String placeholder, FieldIcon icon) {
         return new PillField(placeholder, icon);
     }
 
-    public static JPasswordField pillPassword(String placeholder, String icon) {
+    public static PillField pillField(String placeholder, String icon) {
+        return new PillField(placeholder, icon);
+    }
+
+    public static PillPasswordField pillPassword(String placeholder, FieldIcon icon) {
         return new PillPasswordField(placeholder, icon);
     }
 
-    /** Static capsule field: fully-rounded chrome, optional leading icon and
-     *  simple placeholder. The chrome is cached to an off-screen image so
-     *  every keystroke only blits cached pixels + text = lag-free 60+ FPS. */
+    public static PillPasswordField pillPassword(String placeholder, String icon) {
+        return new PillPasswordField(placeholder, icon);
+    }
+
+    /** Static capsule field: fully-rounded chrome, real-life vector icon and
+     *  dynamic placeholder. The chrome is cached to an off-screen image for smooth rendering. */
     public static class PillField extends JTextField {
         private static final Color BG = new Color(255, 255, 255, 16);
         private static final Color FILL = new Color(255, 255, 255, 10);
         private static final Color BORDER = new Color(255, 255, 255, 60);
         private static final Color MUTED = new Color(255, 255, 255, 120);
 
-        private final String placeholder;
+        private String placeholder;
+        private final FieldIcon fieldIcon;
         private final String icon;
         private final int pad;
         private boolean focused;
+        private boolean hasError = false;
         private BufferedImage chrome;
         private int chromeW = -1;
         private int chromeH = -1;
 
+        public PillField(String placeholder, FieldIcon fieldIcon) {
+            this.placeholder = placeholder;
+            this.fieldIcon = fieldIcon;
+            this.icon = null;
+            this.pad = (fieldIcon != null && fieldIcon != FieldIcon.NONE) ? 48 : 16;
+            init();
+        }
+
         public PillField(String placeholder, String icon) {
             this.placeholder = placeholder;
+            this.fieldIcon = FieldIcon.NONE;
             this.icon = icon;
-            this.pad = icon != null ? 46 : 16;
+            this.pad = icon != null ? 48 : 16;
+            init();
+        }
+
+        private void init() {
             setOpaque(false);
             setForeground(TEXT);
             setCaretColor(TEXT);
             setSelectionColor(TEAL);
             setSelectedTextColor(Color.WHITE);
-            setFont(bodyFont(Font.PLAIN, 19));
+            setFont(bodyFont(Font.PLAIN, 18));
             setBorder(BorderFactory.createEmptyBorder(0, pad, 0, 16));
             addFocusListener(new FocusAdapter() {
                 @Override public void focusGained(FocusEvent e) { focused = true; repaint(); }
                 @Override public void focusLost(FocusEvent e) { focused = false; repaint(); }
             });
+        }
+
+        public void setPlaceholder(String placeholder) {
+            this.placeholder = placeholder;
+            repaint();
+        }
+
+        public void setError(boolean error) {
+            if (this.hasError != error) {
+                this.hasError = error;
+                repaint();
+            }
+        }
+
+        public boolean hasError() {
+            return hasError;
         }
 
         private void rebuildChrome(int w, int h) {
@@ -1980,12 +2572,16 @@ public final class UITheme {
             g2.fillRoundRect(0, 0, w, h, r, r);
             g2.setColor(FILL);
             g2.fillRoundRect(2, 2, w - 4, h - 4, Math.max(1, r - 2), Math.max(1, r - 2));
-            if (icon != null) {
+
+            if (fieldIcon != null && fieldIcon != FieldIcon.NONE) {
+                drawFieldIcon(g2, fieldIcon, 14, (h - 22) / 2, 22, MUTED);
+            } else if (icon != null) {
                 g2.setFont(bodyFont(Font.PLAIN, 18));
                 FontMetrics im = g2.getFontMetrics();
                 g2.setColor(MUTED);
                 g2.drawString(icon, 15, (h - im.getHeight()) / 2 + im.getAscent());
             }
+
             g2.setClip(2, 2, w - 4, Math.max(1, (h - 4) / 2));
             g2.setColor(new Color(255, 255, 255, 16));
             g2.fillRoundRect(2, 2, w - 4, h - 4, Math.max(1, r - 2), Math.max(1, r - 2));
@@ -2007,56 +2603,152 @@ public final class UITheme {
                 g2.drawImage(chrome, 0, 0, null);
                 int r = capsule(h);
                 if (placeholder != null && !placeholder.isEmpty() && getText().isEmpty() && !focused) {
-                    g2.setFont(getFont());
+                    g2.setFont(fontFor(placeholder, Font.PLAIN, getFont().getSize()));
                     FontMetrics fm = g2.getFontMetrics();
-                    g2.setColor(MUTED);
+                    g2.setColor(hasError ? new Color(252, 165, 165, 180) : MUTED);
                     g2.drawString(placeholder, pad, (h - fm.getHeight()) / 2 + fm.getAscent());
                 }
-                if (focused) {
+
+                if (hasError) {
+                    g2.setStroke(new BasicStroke(5f));
+                    g2.setColor(new Color(239, 68, 68, 55));
+                    g2.drawRoundRect(2, 2, w - 5, h - 5, Math.max(1, r - 1), Math.max(1, r - 1));
+                    g2.setStroke(new BasicStroke(2.2f));
+                    g2.setColor(new Color(239, 68, 68));
+                    g2.drawRoundRect(1, 1, w - 3, h - 3, r, r);
+                } else if (focused) {
                     g2.setStroke(new BasicStroke(5f));
                     g2.setColor(new Color(32, 211, 194, 42));
                     g2.drawRoundRect(2, 2, w - 5, h - 5, Math.max(1, r - 1), Math.max(1, r - 1));
+                    g2.setStroke(new BasicStroke(2.2f));
+                    g2.setColor(TEAL);
+                    g2.drawRoundRect(1, 1, w - 3, h - 3, r, r);
+                } else {
+                    g2.setStroke(new BasicStroke(1.2f));
+                    g2.setColor(BORDER);
+                    g2.drawRoundRect(1, 1, w - 3, h - 3, r, r);
                 }
-                g2.setStroke(new BasicStroke(focused ? 2.2f : 1.2f));
-                g2.setColor(focused ? TEAL : BORDER);
-                g2.drawRoundRect(1, 1, w - 3, h - 3, r, r);
                 g2.dispose();
             }
             super.paintComponent(g);
         }
     }
 
-    /** Password variant of PillField. */
+    /** Password variant of PillField with interactive Secret Show/Hide eye toggle. */
     public static class PillPasswordField extends JPasswordField {
         private static final Color BG = new Color(255, 255, 255, 16);
         private static final Color FILL = new Color(255, 255, 255, 10);
         private static final Color BORDER = new Color(255, 255, 255, 60);
         private static final Color MUTED = new Color(255, 255, 255, 120);
 
-        private final String placeholder;
+        private String placeholder;
+        private final FieldIcon fieldIcon;
         private final String icon;
         private final int pad;
         private boolean focused;
+        private boolean hasError = false;
+        private boolean passwordRevealed = false;
+        private boolean eyeHover = false;
         private BufferedImage chrome;
         private int chromeW = -1;
         private int chromeH = -1;
 
+        public PillPasswordField(String placeholder, FieldIcon fieldIcon) {
+            this.placeholder = placeholder;
+            this.fieldIcon = fieldIcon;
+            this.icon = null;
+            this.pad = (fieldIcon != null && fieldIcon != FieldIcon.NONE) ? 48 : 16;
+            init();
+        }
+
         public PillPasswordField(String placeholder, String icon) {
             this.placeholder = placeholder;
+            this.fieldIcon = FieldIcon.NONE;
             this.icon = icon;
-            this.pad = icon != null ? 46 : 16;
+            this.pad = icon != null ? 48 : 16;
+            init();
+        }
+
+        private void init() {
             setOpaque(false);
             setForeground(TEXT);
             setCaretColor(TEXT);
             setSelectionColor(TEAL);
             setSelectedTextColor(Color.WHITE);
-            setFont(bodyFont(Font.PLAIN, 19));
+            setFont(bodyFont(Font.PLAIN, 18));
             setEchoChar('\u2022');
-            setBorder(BorderFactory.createEmptyBorder(0, pad, 0, 16));
+            // Right padding 44px reserves space for the interactive eye button
+            setBorder(BorderFactory.createEmptyBorder(0, pad, 0, 44));
+
             addFocusListener(new FocusAdapter() {
                 @Override public void focusGained(FocusEvent e) { focused = true; repaint(); }
                 @Override public void focusLost(FocusEvent e) { focused = false; repaint(); }
             });
+
+            addMouseMotionListener(new MouseMotionAdapter() {
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    boolean over = isOverEye(e.getX(), e.getY());
+                    if (over != eyeHover) {
+                        eyeHover = over;
+                        setCursor(over ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
+                        setToolTipText(over ? com.worldofwonder.util.I18n.get(passwordRevealed ? "tip_hide_password" : "tip_show_password") : null);
+                        repaint();
+                    }
+                }
+            });
+
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    if (eyeHover) {
+                        eyeHover = false;
+                        setCursor(Cursor.getDefaultCursor());
+                        setToolTipText(null);
+                        repaint();
+                    }
+                }
+
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    if (isOverEye(e.getX(), e.getY())) {
+                        setPasswordRevealed(!passwordRevealed);
+                        setToolTipText(com.worldofwonder.util.I18n.get(passwordRevealed ? "tip_hide_password" : "tip_show_password"));
+                    }
+                }
+            });
+        }
+
+        private boolean isOverEye(int mx, int my) {
+            int ex = getWidth() - 38;
+            int ey = (getHeight() - 24) / 2;
+            return mx >= ex - 6 && mx <= ex + 28 && my >= ey - 4 && my <= ey + 28;
+        }
+
+        public void setPlaceholder(String placeholder) {
+            this.placeholder = placeholder;
+            repaint();
+        }
+
+        public void setError(boolean error) {
+            if (this.hasError != error) {
+                this.hasError = error;
+                repaint();
+            }
+        }
+
+        public boolean hasError() {
+            return hasError;
+        }
+
+        public boolean isPasswordRevealed() {
+            return passwordRevealed;
+        }
+
+        public void setPasswordRevealed(boolean revealed) {
+            this.passwordRevealed = revealed;
+            setEchoChar(revealed ? (char) 0 : '\u2022');
+            repaint();
         }
 
         private void rebuildChrome(int w, int h) {
@@ -2068,12 +2760,16 @@ public final class UITheme {
             g2.fillRoundRect(0, 0, w, h, r, r);
             g2.setColor(FILL);
             g2.fillRoundRect(2, 2, w - 4, h - 4, Math.max(1, r - 2), Math.max(1, r - 2));
-            if (icon != null) {
+
+            if (fieldIcon != null && fieldIcon != FieldIcon.NONE) {
+                drawFieldIcon(g2, fieldIcon, 14, (h - 22) / 2, 22, MUTED);
+            } else if (icon != null) {
                 g2.setFont(bodyFont(Font.PLAIN, 18));
                 FontMetrics im = g2.getFontMetrics();
                 g2.setColor(MUTED);
                 g2.drawString(icon, 15, (h - im.getHeight()) / 2 + im.getAscent());
             }
+
             g2.setClip(2, 2, w - 4, Math.max(1, (h - 4) / 2));
             g2.setColor(new Color(255, 255, 255, 16));
             g2.fillRoundRect(2, 2, w - 4, h - 4, Math.max(1, r - 2), Math.max(1, r - 2));
@@ -2095,19 +2791,54 @@ public final class UITheme {
                 g2.drawImage(chrome, 0, 0, null);
                 int r = capsule(h);
                 if (placeholder != null && !placeholder.isEmpty() && getPassword().length == 0 && !focused) {
-                    g2.setFont(getFont());
+                    g2.setFont(fontFor(placeholder, Font.PLAIN, getFont().getSize()));
                     FontMetrics fm = g2.getFontMetrics();
-                    g2.setColor(MUTED);
+                    g2.setColor(hasError ? new Color(252, 165, 165, 180) : MUTED);
                     g2.drawString(placeholder, pad, (h - fm.getHeight()) / 2 + fm.getAscent());
                 }
-                if (focused) {
+
+                // Render interactive Show/Hide secret password eye icon on the right
+                int eyeX = w - 36;
+                int eyeY = (h - 16) / 2;
+                Color eyeColor = eyeHover ? TEAL : (focused ? ICE : MUTED);
+                g2.setColor(eyeColor);
+                g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                java.awt.geom.Path2D eyePath = new java.awt.geom.Path2D.Float();
+                eyePath.moveTo(eyeX, eyeY + 8);
+                eyePath.quadTo(eyeX + 10, eyeY - 2, eyeX + 20, eyeY + 8);
+                eyePath.quadTo(eyeX + 10, eyeY + 18, eyeX, eyeY + 8);
+                g2.draw(eyePath);
+
+                // Pupil
+                g2.fillOval(eyeX + 7, eyeY + 5, 6, 6);
+
+                // If secret/masked, draw sleek diagonal slash indicating hidden password
+                if (!passwordRevealed) {
+                    g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                    g2.setColor(eyeHover ? CORAL : new Color(248, 113, 113, 210));
+                    g2.drawLine(eyeX, eyeY + 16, eyeX + 20, eyeY);
+                }
+
+                if (hasError) {
+                    g2.setStroke(new BasicStroke(5f));
+                    g2.setColor(new Color(239, 68, 68, 55));
+                    g2.drawRoundRect(2, 2, w - 5, h - 5, Math.max(1, r - 1), Math.max(1, r - 1));
+                    g2.setStroke(new BasicStroke(2.2f));
+                    g2.setColor(new Color(239, 68, 68));
+                    g2.drawRoundRect(1, 1, w - 3, h - 3, r, r);
+                } else if (focused) {
                     g2.setStroke(new BasicStroke(5f));
                     g2.setColor(new Color(32, 211, 194, 42));
                     g2.drawRoundRect(2, 2, w - 5, h - 5, Math.max(1, r - 1), Math.max(1, r - 1));
+                    g2.setStroke(new BasicStroke(2.2f));
+                    g2.setColor(TEAL);
+                    g2.drawRoundRect(1, 1, w - 3, h - 3, r, r);
+                } else {
+                    g2.setStroke(new BasicStroke(1.2f));
+                    g2.setColor(BORDER);
+                    g2.drawRoundRect(1, 1, w - 3, h - 3, r, r);
                 }
-                g2.setStroke(new BasicStroke(focused ? 2.2f : 1.2f));
-                g2.setColor(focused ? TEAL : BORDER);
-                g2.drawRoundRect(1, 1, w - 3, h - 3, r, r);
                 g2.dispose();
             }
             super.paintComponent(g);
@@ -2608,14 +3339,16 @@ public final class UITheme {
             int tf = Math.max(17, (int) Math.round(h * 0.17));
             int sf = Math.max(13, (int) Math.round(h * 0.13));
             int iconSize = Math.max(26, (int) Math.round(h * 0.32));
-            Font titleFont = displayFont(Font.BOLD, tf);
-            Font subFont = bodyFont(Font.PLAIN, sf);
+            Font titleFont = fontFor(title, Font.BOLD, tf);
+            Font subFont = fontFor(subtitle, Font.PLAIN, sf);
             FontMetrics tm = g2.getFontMetrics(titleFont);
             FontMetrics sm = g2.getFontMetrics(subFont);
             FontMetrics im = g2.getFontMetrics(displayFont(Font.BOLD, iconSize));
 
             int iconH = hasIcon == 1 ? iconSize + 4 : 0;
-            int subHeight = subtitle == null || subtitle.isEmpty() ? 0 : sm.getHeight() + 6;
+            int availSubW = w - 32;
+            boolean twoLineSub = h >= 125 && subtitle != null && !subtitle.isEmpty() && sm.stringWidth(subtitle) > availSubW;
+            int subHeight = subtitle == null || subtitle.isEmpty() ? 0 : (twoLineSub ? sm.getHeight() * 2 + 5 : sm.getHeight() + 6);
             int total = (hasIcon == 1 ? im.getHeight() + 4 : 0) + tm.getHeight() + subHeight;
             int startY = (h - total) / 2 - lift;
 
@@ -2635,16 +3368,64 @@ public final class UITheme {
             if (subHeight > 0) {
                 g2.setFont(subFont);
                 g2.setColor(isEnabled() ? subtitleColor : new Color(0x8fa2bd));
-                int subY = titleY + tm.getDescent() + 6 + sm.getAscent();
-                int availSubW = w - 36;
-                String subClipped = subtitle;
-                if (sm.stringWidth(subClipped) > availSubW) {
-                    while (subClipped.length() > 1 && sm.stringWidth(subClipped + "...") > availSubW) {
-                        subClipped = subClipped.substring(0, subClipped.length() - 1);
+                if (twoLineSub) {
+                    java.util.List<String> lines = new java.util.ArrayList<>();
+                    String[] words = subtitle.contains(" ") ? subtitle.split(" ") : null;
+                    if (words != null && words.length > 1) {
+                        StringBuilder line1 = new StringBuilder();
+                        int idx = 0;
+                        while (idx < words.length && sm.stringWidth(line1 + (line1.length() == 0 ? "" : " ") + words[idx]) <= availSubW) {
+                            if (line1.length() > 0) line1.append(" ");
+                            line1.append(words[idx++]);
+                        }
+                        if (line1.length() == 0 && idx < words.length) {
+                            line1.append(words[idx++]);
+                        }
+                        lines.add(line1.toString());
+                        StringBuilder line2 = new StringBuilder();
+                        while (idx < words.length) {
+                            if (line2.length() > 0) line2.append(" ");
+                            line2.append(words[idx++]);
+                        }
+                        String l2 = line2.toString();
+                        if (sm.stringWidth(l2) > availSubW) {
+                            while (l2.length() > 1 && sm.stringWidth(l2 + "...") > availSubW) {
+                                l2 = l2.substring(0, l2.length() - 1);
+                            }
+                            l2 += "...";
+                        }
+                        if (!l2.isEmpty()) lines.add(l2);
+                    } else {
+                        int cut = subtitle.length();
+                        while (cut > 1 && sm.stringWidth(subtitle.substring(0, cut)) > availSubW) {
+                            cut--;
+                        }
+                        lines.add(subtitle.substring(0, cut));
+                        String rem = subtitle.substring(cut);
+                        if (sm.stringWidth(rem) > availSubW) {
+                            while (rem.length() > 1 && sm.stringWidth(rem + "...") > availSubW) {
+                                rem = rem.substring(0, rem.length() - 1);
+                            }
+                            rem += "...";
+                        }
+                        if (!rem.isEmpty()) lines.add(rem);
                     }
-                    subClipped = subClipped + "...";
+                    int curY = titleY + tm.getDescent() + 5 + sm.getAscent();
+                    for (String l : lines) {
+                        g2.drawString(l, (w - sm.stringWidth(l)) / 2, curY);
+                        curY += sm.getHeight();
+                    }
+                } else {
+                    int subY = titleY + tm.getDescent() + 6 + sm.getAscent();
+                    String subClipped = subtitle;
+                    if (sm.stringWidth(subClipped) > availSubW) {
+                        while (subClipped.length() > 1 && sm.stringWidth(subClipped + "...") > availSubW) {
+                            subClipped = subClipped.substring(0, subClipped.length() - 1);
+                        }
+                        subClipped = subClipped + "...";
+                    }
+                    g2.drawString(subClipped, (w - sm.stringWidth(subClipped)) / 2, subY);
                 }
-                g2.drawString(subClipped, (w - sm.stringWidth(subClipped)) / 2, subY);
             }
             g2.dispose();
         }
@@ -2810,7 +3591,7 @@ public final class UITheme {
             g2.drawRoundRect(bx, by, bubbleSize, bubbleSize, bubbleRadius, bubbleRadius);
 
             int letterFont = Math.max(15, (int) Math.round(bubbleSize * 0.5));
-            g2.setFont(displayFont(Font.BOLD, letterFont));
+            g2.setFont(fontFor(letter, Font.BOLD, letterFont));
             FontMetrics bm = g2.getFontMetrics();
             int lx = bx + (bubbleSize - bm.stringWidth(letter)) / 2;
             int ly = by + (bubbleSize - bm.getHeight()) / 2 + bm.getAscent();
@@ -2818,7 +3599,7 @@ public final class UITheme {
             g2.drawString(letter, lx, ly);
 
             int labelFont = Math.max(15, (int) Math.round(h * 0.27));
-            g2.setFont(bodyFont(Font.BOLD, labelFont));
+            g2.setFont(fontFor(label, Font.BOLD, labelFont));
             FontMetrics tm = g2.getFontMetrics();
             int tx = bx + bubbleSize + 14;
             int ty = (h - tm.getHeight()) / 2 + tm.getAscent() - lift;
@@ -2968,19 +3749,19 @@ public final class UITheme {
             int pillY = h - pillH - 18 + yOff;
 
             int titleSize = Math.max(22, (int) Math.round(h * 0.060f));
-            g2.setFont(displayFont(Font.BOLD, titleSize));
+            g2.setFont(fontFor(title, Font.BOLD, titleSize));
             FontMetrics tm = g2.getFontMetrics();
             String titleClipped = clip(tm, title, w - 20);
             int titleY = bandH + 20 + tm.getAscent() + yOff;
             g2.setColor(isEnabled() ? new Color(0xf0f6ff) : new Color(0x8fa2bd));
             g2.drawString(titleClipped, (w - tm.stringWidth(titleClipped)) / 2, titleY);
 
-            int subSize = Math.max(15, (int) Math.round(h * 0.043f));
-            g2.setFont(bodyFont(Font.PLAIN, subSize));
+            int subSize = Math.max(14, (int) Math.round(h * 0.040f));
+            g2.setFont(fontFor(subtitle, Font.PLAIN, subSize));
             FontMetrics sm = g2.getFontMetrics();
-            int subBaseline = titleY + tm.getDescent() + 7 + sm.getAscent();
+            int subBaseline = titleY + tm.getDescent() + 6 + sm.getAscent();
             g2.setColor(isEnabled() ? new Color(0xb8c8e8) : new Color(0x8fa2bd));
-            drawSubtitle(g2, sm, subtitle, w - 24, subBaseline, sm.getHeight() + 3, pillY - 16);
+            drawSubtitle(g2, sm, subtitle, w - 24, subBaseline, sm.getHeight() + 3, pillY - 14);
 
             int px = (w - pillW) / 2;
 
@@ -3001,13 +3782,16 @@ public final class UITheme {
             g2.setPaint(new GradientPaint(0, pillY, new Color(255, 255, 255, 60),
                     0, pillY + pillH / 2f, new Color(255, 255, 255, 0)));
             g2.fillRoundRect(px, pillY, pillW, pillH / 2, pillH / 2, pillH / 2);
-            int pillSize = Math.max(16, (int) Math.round(h * 0.043f));
-            g2.setFont(displayFont(Font.BOLD, pillSize));
+
+            int pillSize = Math.max(15, (int) Math.round(h * 0.042f));
+            String play = com.worldofwonder.util.I18n.get("play_now");
+            g2.setFont(fontFor(play, Font.BOLD, pillSize));
             FontMetrics pf = g2.getFontMetrics();
-            String play = "Play Now";
+            int playW = pf.stringWidth(play);
+            int playX = px + (pillW - playW) / 2;
+            int playY = pillY + (pillH + pf.getAscent() - pf.getDescent()) / 2;
             g2.setColor(Color.WHITE);
-            g2.drawString(play, px + (pillW - pf.stringWidth(play)) / 2,
-                    pillY + (pillH - pf.getHeight()) / 2 + pf.getAscent());
+            g2.drawString(play, playX, playY);
             g2.dispose();
         }
 
@@ -3282,60 +4066,88 @@ public final class UITheme {
             g2.drawLine(x, y, x + w, y);
         }
 
+        private List<String> wrapText(FontMetrics fm, String text, int maxWidth) {
+            List<String> result = new ArrayList<>();
+            if (text == null || text.trim().isEmpty()) {
+                return result;
+            }
+            if (fm.stringWidth(text) <= maxWidth) {
+                result.add(text);
+                return result;
+            }
+            StringBuilder cur = new StringBuilder();
+            if (text.contains(" ")) {
+                String[] words = text.split(" ");
+                for (String word : words) {
+                    if (word.isEmpty()) continue;
+                    String next = cur.length() == 0 ? word : cur + " " + word;
+                    if (fm.stringWidth(next) <= maxWidth) {
+                        cur = new StringBuilder(next);
+                    } else {
+                        if (cur.length() > 0) {
+                            result.add(cur.toString());
+                            cur = new StringBuilder();
+                        }
+                        if (fm.stringWidth(word) > maxWidth) {
+                            for (int c = 0; c < word.length(); c++) {
+                                char ch = word.charAt(c);
+                                if (fm.stringWidth(cur.toString() + ch) <= maxWidth) {
+                                    cur.append(ch);
+                                } else {
+                                    if (cur.length() > 0) {
+                                        result.add(cur.toString());
+                                        cur = new StringBuilder();
+                                    }
+                                    cur.append(ch);
+                                }
+                            }
+                        } else {
+                            cur.append(word);
+                        }
+                    }
+                }
+                if (cur.length() > 0) {
+                    result.add(cur.toString());
+                }
+            } else {
+                for (int c = 0; c < text.length(); c++) {
+                    char ch = text.charAt(c);
+                    if (fm.stringWidth(cur.toString() + ch) <= maxWidth) {
+                        cur.append(ch);
+                    } else {
+                        if (cur.length() > 0) {
+                            result.add(cur.toString());
+                            cur = new StringBuilder();
+                        }
+                        cur.append(ch);
+                    }
+                }
+                if (cur.length() > 0) {
+                    result.add(cur.toString());
+                }
+            }
+            return result;
+        }
+
         private void drawSubtitle(Graphics2D g2, FontMetrics fm, String text, int maxWidth,
                                   int baseline, int lineHeight) {
-            String[] words = text == null ? new String[0] : text.split(" ");
-            List<String> lines = new ArrayList<>();
-            StringBuilder cur = new StringBuilder();
-            for (String word : words) {
-                String next = cur.length() == 0 ? word : cur + " " + word;
-                if (fm.stringWidth(next) <= maxWidth) {
-                    cur = new StringBuilder(next);
-                } else {
-                    lines.add(cur.toString());
-                    cur = new StringBuilder(word);
-                }
-            }
-            if (cur.length() > 0) {
-                lines.add(cur.toString());
-            }
-            int limit = Math.min(lines.size(), 3);
-            for (int i = 0; i < limit; i++) {
-                String line = lines.get(i);
-                if (i == 1 && lines.size() > 2) {
-                    line = clip(fm, line, maxWidth);
-                }
-                g2.drawString(line, (getWidth() - fm.stringWidth(line)) / 2, baseline + i * lineHeight);
-            }
+            drawSubtitle(g2, fm, text, maxWidth, baseline, lineHeight, Integer.MAX_VALUE);
         }
 
         private void drawSubtitle(Graphics2D g2, FontMetrics fm, String text, int maxWidth,
                                   int baseline, int lineHeight, int maxBaseline) {
-            String[] words = text == null ? new String[0] : text.split(" ");
-            List<String> lines = new ArrayList<>();
-            StringBuilder cur = new StringBuilder();
-            for (String word : words) {
-                String next = cur.length() == 0 ? word : cur + " " + word;
-                if (fm.stringWidth(next) <= maxWidth) {
-                    cur = new StringBuilder(next);
-                } else {
-                    lines.add(cur.toString());
-                    cur = new StringBuilder(word);
-                }
-            }
-            if (cur.length() > 0) {
-                lines.add(cur.toString());
-            }
-            int limit = Math.min(lines.size(), 3);
-            for (int i = 0; i < limit; i++) {
-                if (baseline + i * lineHeight + fm.getDescent() > maxBaseline) {
+            List<String> lines = wrapText(fm, text, maxWidth);
+            int maxLines = Math.min(lines.size(), 2);
+            for (int i = 0; i < maxLines; i++) {
+                int y = baseline + i * lineHeight;
+                if (y + fm.getDescent() > maxBaseline && i > 0) {
                     break;
                 }
                 String line = lines.get(i);
-                if (i == 1 && lines.size() > 2) {
+                if (i == maxLines - 1 && lines.size() > maxLines) {
                     line = clip(fm, line, maxWidth);
                 }
-                g2.drawString(line, (getWidth() - fm.stringWidth(line)) / 2, baseline + i * lineHeight);
+                g2.drawString(line, (getWidth() - fm.stringWidth(line)) / 2, y);
             }
         }
 

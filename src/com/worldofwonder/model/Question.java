@@ -111,4 +111,119 @@ public class Question {
     public void setHint(String hint) {
         this.hint = hint;
     }
+
+    private String questionTextKm;
+    private String optionAKm;
+    private String optionBKm;
+    private String optionCKm;
+    private String optionDKm;
+    private String hintKm;
+
+    public String getQuestionTextKm() {
+        return questionTextKm;
+    }
+
+    public void setQuestionTextKm(String questionTextKm) {
+        this.questionTextKm = questionTextKm;
+    }
+
+    public String getOptionAKm() {
+        return optionAKm;
+    }
+
+    public void setOptionAKm(String optionAKm) {
+        this.optionAKm = optionAKm;
+    }
+
+    public String getOptionBKm() {
+        return optionBKm;
+    }
+
+    public void setOptionBKm(String optionBKm) {
+        this.optionBKm = optionBKm;
+    }
+
+    public String getOptionCKm() {
+        return optionCKm;
+    }
+
+    public void setOptionCKm(String optionCKm) {
+        this.optionCKm = optionCKm;
+    }
+
+    public String getOptionDKm() {
+        return optionDKm;
+    }
+
+    public void setOptionDKm(String optionDKm) {
+        this.optionDKm = optionDKm;
+    }
+
+    public String getHintKm() {
+        return hintKm;
+    }
+
+    public void setHintKm(String hintKm) {
+        this.hintKm = hintKm;
+    }
+
+    public String getLocalizedQuestionText() {
+        if (com.worldofwonder.util.I18n.isKhmer()) {
+            if (questionTextKm != null && !questionTextKm.isEmpty()) return questionTextKm;
+            String key = "q_" + id + "_text";
+            String loc = com.worldofwonder.util.I18n.get(key);
+            if (loc != null && !loc.equals(key)) return loc;
+        }
+        return questionText;
+    }
+
+    public String getLocalizedOptionA() {
+        if (com.worldofwonder.util.I18n.isKhmer()) {
+            if (optionAKm != null && !optionAKm.isEmpty()) return optionAKm;
+            String key = "q_" + id + "_a";
+            String loc = com.worldofwonder.util.I18n.get(key);
+            if (loc != null && !loc.equals(key)) return loc;
+        }
+        return optionA;
+    }
+
+    public String getLocalizedOptionB() {
+        if (com.worldofwonder.util.I18n.isKhmer()) {
+            if (optionBKm != null && !optionBKm.isEmpty()) return optionBKm;
+            String key = "q_" + id + "_b";
+            String loc = com.worldofwonder.util.I18n.get(key);
+            if (loc != null && !loc.equals(key)) return loc;
+        }
+        return optionB;
+    }
+
+    public String getLocalizedOptionC() {
+        if (com.worldofwonder.util.I18n.isKhmer()) {
+            if (optionCKm != null && !optionCKm.isEmpty()) return optionCKm;
+            String key = "q_" + id + "_c";
+            String loc = com.worldofwonder.util.I18n.get(key);
+            if (loc != null && !loc.equals(key)) return loc;
+        }
+        return optionC;
+    }
+
+    public String getLocalizedOptionD() {
+        if (com.worldofwonder.util.I18n.isKhmer()) {
+            if (optionDKm != null && !optionDKm.isEmpty()) return optionDKm;
+            String key = "q_" + id + "_d";
+            String loc = com.worldofwonder.util.I18n.get(key);
+            if (loc != null && !loc.equals(key)) return loc;
+        }
+        return optionD;
+    }
+
+    public String getLocalizedHint() {
+        if (com.worldofwonder.util.I18n.isKhmer()) {
+            if (hintKm != null && !hintKm.isEmpty()) return hintKm;
+            String key = "q_" + id + "_hint";
+            String loc = com.worldofwonder.util.I18n.get(key);
+            if (loc != null && !loc.equals(key)) return loc;
+        }
+        return hint;
+    }
 }

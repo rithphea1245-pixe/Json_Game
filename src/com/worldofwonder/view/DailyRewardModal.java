@@ -43,14 +43,17 @@ public class DailyRewardModal extends JDialog {
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
 
-        JLabel title = new UITheme.GradientTextLabel("Daily Treasure Chest",
+        String titleStr = com.worldofwonder.util.I18n.get("daily_modal_title");
+        JLabel title = new UITheme.GradientTextLabel(titleStr,
                 UITheme.FONT_PAGE_TITLE, new Color(0xffdf70), new Color(0xff9900));
+        title.setFont(UITheme.fontFor(titleStr, Font.BOLD, UITheme.FONT_PAGE_TITLE));
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
         header.add(title);
         header.add(Box.createVerticalStrut(6));
 
-        JLabel sub = UITheme.subtitle(canClaim ? "Your daily gift is ready to open!" : "You have already claimed today's treasure!");
-        sub.setFont(UITheme.bodyFont(Font.PLAIN, UITheme.FONT_BODY));
+        String subStr = canClaim ? com.worldofwonder.util.I18n.get("daily_ready") : com.worldofwonder.util.I18n.get("daily_come_back");
+        JLabel sub = UITheme.subtitle(subStr);
+        sub.setFont(UITheme.fontFor(subStr, Font.PLAIN, UITheme.FONT_BODY));
         sub.setAlignmentX(Component.CENTER_ALIGNMENT);
         header.add(sub);
         content.add(header, BorderLayout.NORTH);
@@ -65,21 +68,30 @@ public class DailyRewardModal extends JDialog {
             chestIcon = UITheme.coin(64);
             chestIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
         } else {
-            JLabel claimedBadge = UITheme.badge("✓ CLAIMED TODAY", UITheme.GREEN);
+            JPanel claimedBadge = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
+            claimedBadge.setOpaque(false);
+            claimedBadge.add(UITheme.vectorIcon(UITheme.VectorIcon.CHECK, 18, UITheme.GREEN));
+            String claimedText = com.worldofwonder.util.I18n.get("daily_claimed_today");
+            JLabel lbl = new JLabel(claimedText);
+            lbl.setFont(UITheme.fontFor(claimedText, Font.BOLD, 12));
+            lbl.setForeground(UITheme.GREEN);
+            claimedBadge.add(lbl);
             claimedBadge.setAlignmentX(Component.CENTER_ALIGNMENT);
             chestIcon = claimedBadge;
         }
         center.add(chestIcon);
         center.add(Box.createVerticalStrut(12));
 
-        JLabel rewardAmount = new JLabel("+" + DAILY_REWARD + " Coins", SwingConstants.CENTER);
-        rewardAmount.setFont(UITheme.displayFont(Font.BOLD, 26));
+        String coinsText = com.worldofwonder.util.I18n.get("daily_coins_amount", DAILY_REWARD);
+        JLabel rewardAmount = new JLabel(coinsText, SwingConstants.CENTER);
+        rewardAmount.setFont(UITheme.fontFor(coinsText, Font.BOLD, 26));
         rewardAmount.setForeground(UITheme.GOLD);
         rewardAmount.setAlignmentX(Component.CENTER_ALIGNMENT);
         center.add(rewardAmount);
 
-        JLabel desc = new JLabel(canClaim ? "Log in every day to collect free coins!" : "Come back tomorrow for your next reward!", SwingConstants.CENTER);
-        desc.setFont(UITheme.bodyFont(Font.PLAIN, 13));
+        String descStr = canClaim ? com.worldofwonder.util.I18n.get("daily_desc") : com.worldofwonder.util.I18n.get("daily_come_back");
+        JLabel desc = new JLabel(descStr, SwingConstants.CENTER);
+        desc.setFont(UITheme.fontFor(descStr, Font.PLAIN, 13));
         desc.setForeground(UITheme.TEXT_MUTED);
         desc.setAlignmentX(Component.CENTER_ALIGNMENT);
         center.add(desc);
@@ -91,8 +103,8 @@ public class DailyRewardModal extends JDialog {
         footer.setOpaque(false);
 
         if (canClaim) {
-            JButton claimBtn = UITheme.accentButton("Claim Now! (+50)", UITheme.GOLD);
-            UIUtil.fixedSize(claimBtn, 200, UITheme.BTN_H);
+            JButton claimBtn = UITheme.iconPillButton(UITheme.VectorIcon.GIFT, com.worldofwonder.util.I18n.get("daily_claim_button", DAILY_REWARD), UITheme.GOLD);
+            UIUtil.fixedSize(claimBtn, 220, UITheme.BTN_H);
             claimBtn.addActionListener(e -> {
                 SoundUtil.playVictory();
                 int newTotal = gameController.claimDailyBonus(userId, DAILY_REWARD);
@@ -106,7 +118,9 @@ public class DailyRewardModal extends JDialog {
             footer.add(claimBtn);
         }
 
-        JButton closeBtn = UITheme.ghostButton(canClaim ? "Later" : "Close", UITheme.CORAL);
+        String closeText = canClaim ? com.worldofwonder.util.I18n.get("btn_later") : com.worldofwonder.util.I18n.get("btn_close");
+        JButton closeBtn = UITheme.ghostButton(closeText, UITheme.CORAL);
+        closeBtn.setFont(UITheme.fontFor(closeText, Font.PLAIN, 14));
         UIUtil.fixedSize(closeBtn, 140, UITheme.BTN_H);
         closeBtn.addActionListener(e -> {
             SoundUtil.playClick();
@@ -116,8 +130,8 @@ public class DailyRewardModal extends JDialog {
 
         content.add(footer, BorderLayout.SOUTH);
 
-        // Card Container
-        JPanel card = UITheme.card(new BorderLayout());
+        // Card Container - Opaque modalCard prevents background text bleed-through
+        JPanel card = UITheme.modalCard(new BorderLayout());
         card.setBorder(BorderFactory.createLineBorder(new Color(0xd4a020), 2, true));
         card.setPreferredSize(new Dimension(460, 360));
         card.add(content, BorderLayout.CENTER);

@@ -3,18 +3,27 @@
     "id": 1,
     "username": "admin",
     "email": "admin@example.com",
-    "password": "admin67",
-    "totalPoints": 80,
+    "password": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+    "totalPoints": 600,
     "isAdmin": true,
-    "lastClaimDate": "2026-09-15"
+    "lastClaimDate": "2026-09-20"
   },
   {
     "id": 2,
     "username": "bob",
     "email": "bob@example.com",
-    "password": "password456",
-    "totalPoints": 160,
+    "password": "c6ba91b90d922e159893f46c387e5dc1b3dc5c101a5a4522f03b987177a24a91",
+    "totalPoints": 260,
     "isAdmin": false,
     "lastClaimDate": "2026-09-15"
+  },
+  {
+    "id": 3,
+    "username": "rithphea",
+    "email": "rithphea@example.com",
+    "password": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+    "totalPoints": 150,
+    "isAdmin": false,
+    "lastClaimDate": "2026-09-18"
   }
 ]

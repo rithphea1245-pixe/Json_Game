@@ -3,6 +3,7 @@ package com.worldofwonder.view;
 import com.worldofwonder.model.*;
 import com.worldofwonder.controller.*;
 
+import com.worldofwonder.util.I18n;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -14,6 +15,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
@@ -92,10 +94,25 @@ public class WordSearchGameScreen extends JPanel {
 
     private final Dashboard dashboard;
     private final Random random = new Random();
+    private final Runnable langListener = this::refreshLanguage;
+
+    private static final String VIEW_DIFFICULTY = "difficulty";
+    private static final String VIEW_GAME = "game";
+    private static final String VIEW_COMPLETE = "complete";
+    private final CardLayout cards = new CardLayout();
+    private final JPanel content = new JPanel(cards);
 
     private final JPanel viewCard;
-    private final JPanel header;
-    private final JPanel difficultyPanel;
+    private JPanel header;
+    private JButton headerBackBtn;
+    private JLabel headerTitleLabel;
+
+    private JPanel difficultyPanel;
+    private JLabel diffTitle;
+    private DifficultyCard cardEasy;
+    private DifficultyCard cardMedium;
+    private DifficultyCard cardHard;
+
     private final JPanel gamePanel;
     private final GridBoard board;
     private final JPanel wordListPanel;
@@ -103,8 +120,18 @@ public class WordSearchGameScreen extends JPanel {
     private final JLabel pointsLabel;
     private final JLabel feedbackLabel;
     private final JLabel difficultyLabel;
-    private final JPanel completePanel;
+    private JLabel wordsTitle;
+    private JButton hintBtn;
+    private JButton newPuzzleBtn;
+    private JButton changeDiffBtn;
+    private JButton backToGamesBtn;
+
+    private JPanel completePanel;
+    private UITheme.GradientTextLabel completeTitle;
     private JLabel completeText;
+    private JButton completeAgainBtn;
+    private JButton completeChangeBtn;
+    private JButton completeDashBtn;
     private UITheme.Confetti confetti;
     private Point hoverCell;
 
@@ -145,11 +172,6 @@ public class WordSearchGameScreen extends JPanel {
         this.dashboard = dashboard;
         setOpaque(false);
 
-        this.header = buildHeader();
-        this.difficultyPanel = buildDifficultyPanel();
-        this.completePanel = buildCompletePanel();
-        this.confetti = new UITheme.Confetti(completePanel);
-
         this.board = new GridBoard();
         this.wordListPanel = new JPanel(new WrapLayout(FlowLayout.CENTER, 8, 8));
         this.wordListPanel.setOpaque(false);
@@ -158,52 +180,160 @@ public class WordSearchGameScreen extends JPanel {
         this.pointsLabel = UITheme.badge("", UITheme.GOLD);
         this.feedbackLabel = new JLabel("", SwingConstants.CENTER);
         this.difficultyLabel = UITheme.badge("", UITheme.TEAL);
+
+        this.header = buildHeader();
+        this.difficultyPanel = buildDifficultyPanel();
         this.gamePanel = buildGamePanel();
+        this.completePanel = buildCompletePanel();
+        this.confetti = new UITheme.Confetti(completePanel);
+
+        content.setOpaque(false);
+        content.add(difficultyPanel, VIEW_DIFFICULTY);
+        content.add(gamePanel, VIEW_GAME);
+        content.add(completePanel, VIEW_COMPLETE);
 
         this.viewCard = UITheme.card(new BorderLayout());
         viewCard.setBorder(BorderFactory.createEmptyBorder(UITheme.PAD_CARD_Y, UITheme.PAD_CARD_X, UITheme.PAD_CARD_Y, UITheme.PAD_CARD_X));
         UIUtil.fixedSize(viewCard, 1000, 700);
         viewCard.add(header, BorderLayout.NORTH);
-        viewCard.add(difficultyPanel, BorderLayout.CENTER);
+        viewCard.add(content, BorderLayout.CENTER);
 
         JPanel root = UITheme.screenPage(viewCard);
 
         UITheme.autoScale(root, 1080, 790, 0.85, 1.5);
+        UITheme.recordBaseTree(header);
         UITheme.recordBaseTree(difficultyPanel);
         UITheme.recordBaseTree(gamePanel);
         UITheme.recordBaseTree(completePanel);
 
         add(root, BorderLayout.CENTER);
+        I18n.addLanguageListener(langListener);
+    }
+
+    /** Called when language changes - refreshes labels in word search screen without destroying view tree. */
+    private void refreshLanguage() {
+        // 1. Header
+        if (headerBackBtn != null) {
+            headerBackBtn.setText(com.worldofwonder.util.I18n.get("back_to_games"));
+            headerBackBtn.setFont(UITheme.fontFor(headerBackBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (headerTitleLabel != null) {
+            headerTitleLabel.setText(com.worldofwonder.util.I18n.get("game_wordsearch_title"));
+            headerTitleLabel.setFont(UITheme.fontFor(headerTitleLabel.getText(), Font.BOLD, 30));
+        }
+
+        // 2. Difficulty Panel
+        if (diffTitle != null) {
+            diffTitle.setText(com.worldofwonder.util.I18n.get("choose_difficulty"));
+            diffTitle.setFont(UITheme.fontFor(diffTitle.getText(), Font.BOLD, 26));
+        }
+        if (cardEasy != null) cardEasy.repaint();
+        if (cardMedium != null) cardMedium.repaint();
+        if (cardHard != null) cardHard.repaint();
+
+        // 3. Game Panel
+        if (wordsTitle != null) {
+            wordsTitle.setText(com.worldofwonder.util.I18n.get("ws_words_to_find"));
+            wordsTitle.setFont(UITheme.fontFor(wordsTitle.getText(), Font.BOLD, 18));
+        }
+        if (hintBtn != null) {
+            hintBtn.setText(com.worldofwonder.util.I18n.get("ws_radar_hint"));
+            hintBtn.setFont(UITheme.fontFor(hintBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (newPuzzleBtn != null) {
+            newPuzzleBtn.setText(com.worldofwonder.util.I18n.get("cups_new_game"));
+            newPuzzleBtn.setFont(UITheme.fontFor(newPuzzleBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (changeDiffBtn != null) {
+            changeDiffBtn.setText(com.worldofwonder.util.I18n.get("cups_change_diff"));
+            changeDiffBtn.setFont(UITheme.fontFor(changeDiffBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (backToGamesBtn != null) {
+            backToGamesBtn.setText(com.worldofwonder.util.I18n.get("exit_to_games"));
+            backToGamesBtn.setFont(UITheme.fontFor(backToGamesBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+
+        // 4. Complete Panel
+        if (completeTitle != null) {
+            completeTitle.setText(com.worldofwonder.util.I18n.get("ws_solved_title"));
+            completeTitle.setFont(UITheme.fontFor(completeTitle.getText(), Font.BOLD, 34));
+        }
+        if (completeAgainBtn != null) {
+            completeAgainBtn.setText(com.worldofwonder.util.I18n.get("quiz_play_again"));
+            completeAgainBtn.setFont(UITheme.fontFor(completeAgainBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (completeChangeBtn != null) {
+            completeChangeBtn.setText(com.worldofwonder.util.I18n.get("cups_change_diff"));
+            completeChangeBtn.setFont(UITheme.fontFor(completeChangeBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (completeDashBtn != null) {
+            completeDashBtn.setText(com.worldofwonder.util.I18n.get("back_to_dashboard"));
+            completeDashBtn.setFont(UITheme.fontFor(completeDashBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+
+        updateMeta();
+        if (board != null) {
+            board.invalidateCache();
+            board.repaint();
+        }
+        revalidate();
+        repaint();
     }
 
     private JPanel buildHeader() {
-        JButton back = UITheme.ghostButton("🏠 Back to Games", UITheme.CORAL);
-        UIUtil.fixedSize(back, 180, UITheme.BTN_H);
-        back.addActionListener(e -> {
+        headerBackBtn = UITheme.backButton(com.worldofwonder.util.I18n.get("back_to_games"), UITheme.CORAL);
+        UIUtil.fixedSize(headerBackBtn, 190, UITheme.BTN_H);
+        headerBackBtn.addActionListener(e -> {
             if (radarTimer != null && radarTimer.isRunning()) {
                 radarTimer.stop();
             }
             dashboard.showDashboard();
         });
-        return UITheme.screenHeader(back, "Word Search", 30);
+        headerTitleLabel = UITheme.title(com.worldofwonder.util.I18n.get("game_wordsearch_title"), 30);
+
+        JPanel p = new JPanel(new BorderLayout(12, 0));
+        p.setOpaque(false);
+        p.setBorder(BorderFactory.createEmptyBorder(10, 14, 8, 14));
+        p.add(headerBackBtn, BorderLayout.WEST);
+        p.add(headerTitleLabel, BorderLayout.CENTER);
+
+        JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        east.setOpaque(false);
+        JButton soundBtn = UITheme.ghostButton(SoundUtil.isMuted() ? "SFX: OFF" : "SFX: ON", UITheme.TEAL);
+        UIUtil.fixedSize(soundBtn, 95, UITheme.BTN_H_SM);
+        soundBtn.setToolTipText("Toggle Sound Effects");
+        soundBtn.addActionListener(e -> {
+            SoundUtil.toggleMute();
+            soundBtn.setText(SoundUtil.isMuted() ? "SFX: OFF" : "SFX: ON");
+            if (!SoundUtil.isMuted()) {
+                SoundUtil.playClick();
+            }
+        });
+        east.add(soundBtn);
+        p.add(east, BorderLayout.EAST);
+        return p;
     }
 
     private JPanel buildDifficultyPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
 
-        JLabel title = UITheme.title("Choose your difficulty", 26);
-        panel.add(title, BorderLayout.NORTH);
+        diffTitle = UITheme.title(com.worldofwonder.util.I18n.get("choose_difficulty"), 26);
+        panel.add(diffTitle, BorderLayout.NORTH);
 
         JPanel buttons = new JPanel();
         buttons.setLayout(new javax.swing.BoxLayout(buttons, javax.swing.BoxLayout.Y_AXIS));
         buttons.setOpaque(false);
         buttons.setBorder(BorderFactory.createEmptyBorder(28, 0, 0, 0));
-        buttons.add(new DifficultyCard(Difficulty.EASY, "Smaller grid, fewer words", UITheme.GREEN, "\uD83C\uDF31"));
+        cardEasy = new DifficultyCard(Difficulty.EASY, com.worldofwonder.util.I18n.get("ws_easy_desc"), UITheme.GREEN, "E");
+        cardMedium = new DifficultyCard(Difficulty.MEDIUM, com.worldofwonder.util.I18n.get("ws_medium_desc"), UITheme.GOLD, "M");
+        cardHard = new DifficultyCard(Difficulty.HARD, com.worldofwonder.util.I18n.get("ws_hard_desc"), UITheme.CORAL, "H");
+
+        buttons.add(cardEasy);
         buttons.add(Box.createVerticalStrut(16));
-        buttons.add(new DifficultyCard(Difficulty.MEDIUM, "More words and diagonal paths", UITheme.GOLD, "\u26A1"));
+        buttons.add(cardMedium);
         buttons.add(Box.createVerticalStrut(16));
-        buttons.add(new DifficultyCard(Difficulty.HARD, "Large grid, all directions including backwards", UITheme.CORAL, "\uD83D\uDD25"));
+        buttons.add(cardHard);
 
         JPanel wrap = UIUtil.centered(buttons);
         wrap.setOpaque(false);
@@ -253,7 +383,7 @@ public class WordSearchGameScreen extends JPanel {
         right.setOpaque(false);
         right.setPreferredSize(new Dimension(260, 0));
 
-        JLabel wordsTitle = UITheme.title("Words to find", 18);
+        wordsTitle = UITheme.title(com.worldofwonder.util.I18n.get("ws_words_to_find"), 18);
         right.add(wordsTitle, BorderLayout.NORTH);
 
         JScrollPane scroll = new JScrollPane(wordListPanel);
@@ -267,31 +397,32 @@ public class WordSearchGameScreen extends JPanel {
         JPanel actions = new JPanel(new GridLayout(4, 1, 0, 10));
         actions.setOpaque(false);
 
-        JButton hintBtn = UITheme.accentButton("\uD83D\uDD0D Radar Hint", UITheme.GOLD);
+        hintBtn = UITheme.iconPillButton(UITheme.VectorIcon.RADAR, com.worldofwonder.util.I18n.get("ws_radar_hint"), UITheme.GOLD);
         UIUtil.fixedSize(hintBtn, 220, UITheme.BTN_H);
         hintBtn.setToolTipText("Spot the start letter of an undiscovered word");
         hintBtn.addActionListener(e -> useRadarHint());
         actions.add(hintBtn);
 
-        JButton newPuzzle = UITheme.primaryButton("New Puzzle");
-        UIUtil.fixedSize(newPuzzle, 220, UITheme.BTN_H);
-        newPuzzle.addActionListener(e -> startPuzzle(difficulty));
-        actions.add(newPuzzle);
-        JButton changeDifficulty = UITheme.ghostButton("Change Difficulty", UITheme.TEXT_MUTED);
-        UIUtil.fixedSize(changeDifficulty, 220, UITheme.BTN_H);
-        changeDifficulty.addActionListener(e -> showDifficultyPanel());
-        actions.add(changeDifficulty);
+        newPuzzleBtn = UITheme.primaryButton(com.worldofwonder.util.I18n.get("cups_new_game"));
+        UIUtil.fixedSize(newPuzzleBtn, 220, UITheme.BTN_H);
+        newPuzzleBtn.addActionListener(e -> startPuzzle(difficulty));
+        actions.add(newPuzzleBtn);
 
-        JButton backToGames = UITheme.ghostButton("🏠 Exit to Games", UITheme.CORAL);
-        UIUtil.fixedSize(backToGames, 220, UITheme.BTN_H);
-        backToGames.setToolTipText("Return to the main game hub");
-        backToGames.addActionListener(e -> {
+        changeDiffBtn = UITheme.ghostButton(com.worldofwonder.util.I18n.get("cups_change_diff"), UITheme.TEXT_MUTED);
+        UIUtil.fixedSize(changeDiffBtn, 220, UITheme.BTN_H);
+        changeDiffBtn.addActionListener(e -> showDifficultyPanel());
+        actions.add(changeDiffBtn);
+
+        backToGamesBtn = UITheme.iconPillButton(UITheme.VectorIcon.ARROW_LEFT, com.worldofwonder.util.I18n.get("exit_to_games"), UITheme.CORAL);
+        UIUtil.fixedSize(backToGamesBtn, 220, UITheme.BTN_H);
+        backToGamesBtn.setToolTipText("Return to the main game hub");
+        backToGamesBtn.addActionListener(e -> {
             if (radarTimer != null && radarTimer.isRunning()) {
                 radarTimer.stop();
             }
             dashboard.showDashboard();
         });
-        actions.add(backToGames);
+        actions.add(backToGamesBtn);
 
         JPanel actionsWrap = UIUtil.centered(actions);
         actionsWrap.setOpaque(false);
@@ -323,9 +454,8 @@ public class WordSearchGameScreen extends JPanel {
         };
         panel.setOpaque(false);
 
-        UITheme.GradientTextLabel title =
-                new UITheme.GradientTextLabel("Puzzle Complete!", 34, UITheme.GOLD, UITheme.CORAL);
-        panel.add(title, BorderLayout.NORTH);
+        completeTitle = new UITheme.GradientTextLabel(com.worldofwonder.util.I18n.get("ws_solved_title"), 34, UITheme.GOLD, UITheme.CORAL);
+        panel.add(completeTitle, BorderLayout.NORTH);
 
         completeText = new JLabel("", SwingConstants.CENTER);
         completeText.setFont(UITheme.bodyFont(Font.PLAIN, 18));
@@ -336,20 +466,20 @@ public class WordSearchGameScreen extends JPanel {
         buttons.setOpaque(false);
         buttons.setBorder(BorderFactory.createEmptyBorder(20, 24, 0, 24));
 
-        JButton again = UITheme.primaryButton("New Puzzle");
-        UIUtil.fixedSize(again, 340, UITheme.BTN_H);
-        again.addActionListener(e -> startPuzzle(difficulty));
-        buttons.add(again);
+        completeAgainBtn = UITheme.primaryButton(com.worldofwonder.util.I18n.get("quiz_play_again"));
+        UIUtil.fixedSize(completeAgainBtn, 340, UITheme.BTN_H);
+        completeAgainBtn.addActionListener(e -> startPuzzle(difficulty));
+        buttons.add(completeAgainBtn);
 
-        JButton change = UITheme.ghostButton("Change Difficulty", UITheme.TEXT_MUTED);
-        UIUtil.fixedSize(change, 340, UITheme.BTN_H);
-        change.addActionListener(e -> showDifficultyPanel());
-        buttons.add(change);
+        completeChangeBtn = UITheme.ghostButton(com.worldofwonder.util.I18n.get("cups_change_diff"), UITheme.TEXT_MUTED);
+        UIUtil.fixedSize(completeChangeBtn, 340, UITheme.BTN_H);
+        completeChangeBtn.addActionListener(e -> showDifficultyPanel());
+        buttons.add(completeChangeBtn);
 
-        JButton dashboardBtn = UITheme.ghostButton("Back to Dashboard", UITheme.TEXT_MUTED);
-        UIUtil.fixedSize(dashboardBtn, 340, UITheme.BTN_H);
-        dashboardBtn.addActionListener(e -> dashboard.showDashboard());
-        buttons.add(dashboardBtn);
+        completeDashBtn = UITheme.iconPillButton(UITheme.VectorIcon.ARROW_LEFT, com.worldofwonder.util.I18n.get("back_to_dashboard"), UITheme.TEXT_MUTED);
+        UIUtil.fixedSize(completeDashBtn, 340, UITheme.BTN_H);
+        completeDashBtn.addActionListener(e -> dashboard.showDashboard());
+        buttons.add(completeDashBtn);
 
         JPanel wrap = UIUtil.centered(buttons);
         wrap.setOpaque(false);
@@ -358,27 +488,21 @@ public class WordSearchGameScreen extends JPanel {
     }
 
     private void showDifficultyPanel() {
-        viewCard.removeAll();
-        viewCard.add(header, BorderLayout.NORTH);
-        viewCard.add(difficultyPanel, BorderLayout.CENTER);
+        cards.show(content, VIEW_DIFFICULTY);
         revalidate();
         repaint();
     }
 
     private void showGamePanel() {
-        viewCard.removeAll();
-        viewCard.add(header, BorderLayout.NORTH);
-        viewCard.add(gamePanel, BorderLayout.CENTER);
+        cards.show(content, VIEW_GAME);
         revalidate();
         repaint();
     }
 
     private void showCompletePanel() {
         SoundUtil.playVictory();
-        completeText.setText("You found all " + words.size() + " words!");
-        viewCard.removeAll();
-        viewCard.add(header, BorderLayout.NORTH);
-        viewCard.add(completePanel, BorderLayout.CENTER);
+        completeText.setText(com.worldofwonder.util.I18n.get("ws_all_found", words.size()));
+        cards.show(content, VIEW_COMPLETE);
         revalidate();
         repaint();
         confetti.launch();
@@ -517,10 +641,12 @@ public class WordSearchGameScreen extends JPanel {
     }
 
     private void renderPuzzle() {
-        difficultyLabel.setText("Difficulty: " + difficulty.label);
+        String diffName = difficulty == Difficulty.EASY ? com.worldofwonder.util.I18n.get("diff_easy")
+                : (difficulty == Difficulty.MEDIUM ? com.worldofwonder.util.I18n.get("diff_medium") : com.worldofwonder.util.I18n.get("diff_hard"));
+        difficultyLabel.setText((com.worldofwonder.util.I18n.isKhmer() ? "កម្រិត៖ " : "Difficulty: ") + diffName);
         renderWordList();
         updateMeta();
-        feedbackLabel.setText("Drag across letters to find the words.");
+        feedbackLabel.setText(com.worldofwonder.util.I18n.get("ws_find_words"));
         feedbackLabel.setForeground(UITheme.TEXT_MUTED);
     }
 
@@ -551,8 +677,11 @@ public class WordSearchGameScreen extends JPanel {
                 found++;
             }
         }
-        progressLabel.setText(found + " / " + words.size() + " found");
-        pointsLabel.setText("+" + points + " pts");
+        progressLabel.setText(com.worldofwonder.util.I18n.get("ws_words_found", found, words.size()));
+        pointsLabel.setText(com.worldofwonder.util.I18n.get("ws_pts_earned", points));
+        String diffName = difficulty == Difficulty.EASY ? com.worldofwonder.util.I18n.get("diff_easy")
+                : (difficulty == Difficulty.MEDIUM ? com.worldofwonder.util.I18n.get("diff_medium") : com.worldofwonder.util.I18n.get("diff_hard"));
+        difficultyLabel.setText((com.worldofwonder.util.I18n.isKhmer() ? "កម្រិត៖ " : "Difficulty: ") + diffName);
     }
 
     /* ================= Selection & matching ================= */
@@ -683,7 +812,7 @@ public class WordSearchGameScreen extends JPanel {
         int earned = w.word.length() * POINTS_PER_LETTER;
         points += earned;
         SoundUtil.playCorrect();
-        feedbackLabel.setText("Found " + w.word + "! +" + earned + " points");
+        feedbackLabel.setText(com.worldofwonder.util.I18n.get("ws_found_word", w.word, earned));
         feedbackLabel.setForeground(UITheme.GREEN);
         renderWordList();
         updateMeta();
@@ -698,11 +827,14 @@ public class WordSearchGameScreen extends JPanel {
         }
         if (allFound) {
             points += COMPLETION_BONUS;
-            String stars = (radarHintsUsed == 0) ? "\u2B50\u2B50\u2B50" : (radarHintsUsed <= 2 ? "\u2B50\u2B50" : "\u2B50");
-            completeText.setText("<html><center><span style='font-size:24px;'>" + stars + "</span><br><br>You found all " + words.size() + " words!<br>"
+            String rating = (radarHintsUsed == 0) ? "PERFECT SCORE (3/3)" : (radarHintsUsed <= 2 ? "GREAT JOB (2/3)" : "PUZZLE SOLVED (1/3)");
+            String diffName = difficulty == Difficulty.EASY ? com.worldofwonder.util.I18n.get("diff_easy")
+                    : (difficulty == Difficulty.MEDIUM ? com.worldofwonder.util.I18n.get("diff_medium") : com.worldofwonder.util.I18n.get("diff_hard"));
+            completeText.setText("<html><center><span style='font-size:20px;letter-spacing:1px;color:#ffd700;font-weight:bold;'>" + rating + "</span><br><br>"
+                    + com.worldofwonder.util.I18n.get("ws_all_found", words.size()) + "<br>"
                     + (radarHintsUsed > 0 ? "<span style='color:#a0b0d0;font-size:12px;'><i>(Used " + radarHintsUsed + " Radar Hints)</i></span><br>" : "")
-                    + "<span style='color:#ffd700;font-size:18px;'>+" + points + " Points Earned!</span><br><br>"
-                    + "<span style='color:#a0b0d0;font-size:12px;'>Grid: " + size + "x" + size + " (" + difficulty.label + ")</span></center></html>");
+                    + "<span style='color:#ffd700;font-size:18px;'>" + com.worldofwonder.util.I18n.get("ws_pts_earned", points) + "</span><br><br>"
+                    + "<span style='color:#a0b0d0;font-size:12px;'>Grid: " + size + "x" + size + " (" + diffName + ")</span></center></html>");
             completeText.setForeground(UITheme.GOLD);
             SwingUtilities.invokeLater(this::showCompletePanel);
             syncCompletionToBackend();
@@ -727,7 +859,7 @@ public class WordSearchGameScreen extends JPanel {
         radarCell = start;
         SoundUtil.playHint();
         feedbackLabel.setForeground(UITheme.GOLD);
-        feedbackLabel.setText("\uD83D\uDD0D Radar: '" + unfound.word + "' starts at Row " + (start.x + 1) + ", Col " + (start.y + 1) + "!");
+        feedbackLabel.setText("Radar: '" + unfound.word + "' starts at Row " + (start.x + 1) + ", Col " + (start.y + 1) + "!");
         board.repaint();
 
         if (radarTimer != null && radarTimer.isRunning()) {
@@ -895,9 +1027,12 @@ public class WordSearchGameScreen extends JPanel {
 
             int tf = 22;
             int sf = 14;
-            g2.setFont(UITheme.displayFont(Font.BOLD, tf));
+            String diffLabel = difficulty == Difficulty.EASY ? com.worldofwonder.util.I18n.get("diff_easy")
+                    : (difficulty == Difficulty.MEDIUM ? com.worldofwonder.util.I18n.get("diff_medium")
+                    : com.worldofwonder.util.I18n.get("diff_hard"));
+            diffLabel = diffLabel.toUpperCase();
+            g2.setFont(UITheme.fontFor(diffLabel, Font.BOLD, tf));
             FontMetrics tm = g2.getFontMetrics();
-            String diffLabel = difficulty.label.toUpperCase();
             int titleY = h / 2 - 6 + yOff;
             g2.setColor(isEnabled() ? UITheme.TEXT : new Color(0x8fa2bd));
             String clippedTitle = diffLabel;
@@ -909,10 +1044,13 @@ public class WordSearchGameScreen extends JPanel {
             }
             g2.drawString(clippedTitle, textX, titleY);
 
-            g2.setFont(UITheme.bodyFont(Font.PLAIN, sf));
+            String subText = difficulty == Difficulty.EASY ? com.worldofwonder.util.I18n.get("ws_easy_desc")
+                    : (difficulty == Difficulty.MEDIUM ? com.worldofwonder.util.I18n.get("ws_medium_desc")
+                    : com.worldofwonder.util.I18n.get("ws_hard_desc"));
+            g2.setFont(UITheme.fontFor(subText, Font.PLAIN, sf));
             FontMetrics sm = g2.getFontMetrics();
             g2.setColor(isEnabled() ? UITheme.TEXT_MUTED : new Color(0x8fa2bd));
-            String clippedSub = subtitle;
+            String clippedSub = subText;
             if (sm.stringWidth(clippedSub) > availW) {
                 while (clippedSub.length() > 1 && sm.stringWidth(clippedSub + "...") > availW) {
                     clippedSub = clippedSub.substring(0, clippedSub.length() - 1);
@@ -920,6 +1058,7 @@ public class WordSearchGameScreen extends JPanel {
                 clippedSub = clippedSub + "...";
             }
             g2.drawString(clippedSub, textX, titleY + tm.getDescent() + 6 + sm.getAscent());
+
 
             int tagW = 70;
             int tagH = 22;

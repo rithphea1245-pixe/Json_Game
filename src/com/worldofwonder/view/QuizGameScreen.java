@@ -7,6 +7,7 @@ import com.worldofwonder.model.Level;
 import com.worldofwonder.model.Question;
 import com.worldofwonder.model.World;
 
+import com.worldofwonder.util.I18n;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -83,6 +84,19 @@ public class QuizGameScreen extends JPanel {
     private JLabel streakLabel;
     private JButton fiftyFiftyBtn;
     private boolean fiftyFiftyUsed = false;
+    private JLabel titleLbl;
+    private JButton topBackBtn;
+    private JLabel worldsTitle;
+    private JLabel worldsSub;
+    private JLabel levelsSub;
+    private JButton levelsBackBtn;
+    private JLabel completeSub;
+    private JButton againBtn;
+    private JButton levelsCompleteBtn;
+    private JButton worldsCompleteBtn;
+    private JButton exitBtn;
+    private World currentWorld;
+    private final Runnable langListener = this::refreshLanguage;
 
     public QuizGameScreen(Dashboard dashboard) {
         super(new BorderLayout());
@@ -96,37 +110,36 @@ public class QuizGameScreen extends JPanel {
         content.add(buildWorldsPanel(), PANEL_WORLDS);
         content.add(buildLevelsPanel(), PANEL_LEVELS);
         content.add(buildQuizPanel(), PANEL_QUIZ);
-        completePanel = buildCompletePanel();
-        content.add(completePanel, PANEL_COMPLETE);
-        confetti = new UITheme.Confetti(completePanel);
+        content.add(buildCompletePanel(), PANEL_COMPLETE);
 
         JPanel card = UITheme.card(new BorderLayout());
         card.setBorder(BorderFactory.createEmptyBorder(UITheme.PAD_CARD_Y, UITheme.PAD_CARD_X, UITheme.PAD_CARD_Y, UITheme.PAD_CARD_X));
         UIUtil.fixedSize(card, 960, 740);
 
-        JButton back = UITheme.ghostButton("🏠 Back to Games", UITheme.CORAL);
+        JButton back = UITheme.backButton(com.worldofwonder.util.I18n.get("back_to_games"), UITheme.CORAL);
         UIUtil.fixedSize(back, 180, UITheme.BTN_H);
         back.addActionListener(e -> {
             stopTimer();
             dashboard.showDashboard();
         });
+        this.topBackBtn = back;
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setOpaque(false);
         topBar.setBorder(BorderFactory.createEmptyBorder(2, 2, 12, 2));
         topBar.add(back, BorderLayout.WEST);
 
-        JLabel titleLbl = UITheme.title("World of Wonder Quiz", 24);
+        this.titleLbl = UITheme.title(com.worldofwonder.util.I18n.get("game_quiz_title"), 24);
         topBar.add(titleLbl, BorderLayout.CENTER);
 
         JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         east.setOpaque(false);
 
-        JButton soundBtn = UITheme.ghostButton(SoundUtil.isMuted() ? "\uD83D\uDD07" : "\uD83D\uDD0A", UITheme.TEAL);
-        UIUtil.fixedSize(soundBtn, 56, UITheme.BTN_H_SM);
+        JButton soundBtn = UITheme.ghostButton(SoundUtil.isMuted() ? "SFX: OFF" : "SFX: ON", UITheme.TEAL);
+        UIUtil.fixedSize(soundBtn, 95, UITheme.BTN_H_SM);
         soundBtn.setToolTipText("Toggle Sound Effects");
         soundBtn.addActionListener(e -> {
             SoundUtil.toggleMute();
-            soundBtn.setText(SoundUtil.isMuted() ? "\uD83D\uDD07" : "\uD83D\uDD0A");
+            soundBtn.setText(SoundUtil.isMuted() ? "SFX: OFF" : "SFX: ON");
             if (!SoundUtil.isMuted()) {
                 SoundUtil.playClick();
             }
@@ -142,6 +155,104 @@ public class QuizGameScreen extends JPanel {
 
         cards.show(content, PANEL_WORLDS);
         loadWorlds();
+        I18n.addLanguageListener(langListener);
+    }
+
+    /** Called when language changes - refreshes all dynamic labels in the quiz screen. */
+    private void refreshLanguage() {
+        if (titleLbl != null) {
+            titleLbl.setText(com.worldofwonder.util.I18n.get("game_quiz_title"));
+            titleLbl.setFont(UITheme.fontFor(titleLbl.getText(), Font.BOLD, 24));
+        }
+        if (topBackBtn != null) {
+            topBackBtn.setText(com.worldofwonder.util.I18n.get("back_to_games"));
+            topBackBtn.setFont(UITheme.fontFor(topBackBtn.getText(), Font.PLAIN, UITheme.FONT_BUTTON));
+        }
+        if (worldsTitle != null) {
+            worldsTitle.setText(com.worldofwonder.util.I18n.get("quiz_choose_world"));
+            worldsTitle.setFont(UITheme.fontFor(worldsTitle.getText(), Font.BOLD, UITheme.FONT_PAGE_TITLE));
+        }
+        if (worldsSub != null) {
+            worldsSub.setText(com.worldofwonder.util.I18n.get("quiz_choose_world_sub"));
+            worldsSub.setFont(UITheme.fontFor(worldsSub.getText(), Font.PLAIN, UITheme.FONT_BODY));
+        }
+        if (levelsTitle != null && currentWorld != null) {
+            levelsTitle.setText(com.worldofwonder.util.I18n.get("quiz_levels_title", getWorldDisplayName(currentWorld)));
+            levelsTitle.setFont(UITheme.fontFor(levelsTitle.getText(), Font.BOLD, UITheme.FONT_PAGE_TITLE));
+        } else if (levelsTitle != null) {
+            levelsTitle.setText(com.worldofwonder.util.I18n.get("quiz_select_level"));
+            levelsTitle.setFont(UITheme.fontFor(levelsTitle.getText(), Font.BOLD, UITheme.FONT_PAGE_TITLE));
+        }
+        if (levelsSub != null) {
+            levelsSub.setText(com.worldofwonder.util.I18n.get("quiz_choose_level_sub"));
+            levelsSub.setFont(UITheme.fontFor(levelsSub.getText(), Font.PLAIN, UITheme.FONT_BODY));
+        }
+        if (levelsBackBtn != null) {
+            levelsBackBtn.setText(com.worldofwonder.util.I18n.get("quiz_select_world"));
+            levelsBackBtn.setFont(UITheme.fontFor(levelsBackBtn.getText(), Font.PLAIN, UITheme.FONT_BUTTON));
+        }
+        if (quizLevelName != null && currentLevel != null) {
+            quizLevelName.setText(getLevelDisplayName(currentLevel));
+            quizLevelName.setFont(UITheme.fontFor(quizLevelName.getText(), Font.BOLD, UITheme.FONT_SECTION));
+        }
+        if (hintButton != null) {
+            hintButton.setText(com.worldofwonder.util.I18n.get("quiz_hint"));
+            hintButton.setFont(UITheme.fontFor(hintButton.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (fiftyFiftyBtn != null) {
+            fiftyFiftyBtn.setText(com.worldofwonder.util.I18n.get("quiz_lifeline"));
+            fiftyFiftyBtn.setFont(UITheme.fontFor(fiftyFiftyBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (submitButton != null) {
+            submitButton.setText(com.worldofwonder.util.I18n.get("quiz_submit"));
+            submitButton.setFont(UITheme.fontFor(submitButton.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (nextButton != null) {
+            if (questions != null && questionIndex == questions.size() - 1) {
+                nextButton.setText(com.worldofwonder.util.I18n.get("quiz_view_results"));
+            } else {
+                nextButton.setText(com.worldofwonder.util.I18n.get("quiz_next_question"));
+            }
+            nextButton.setFont(UITheme.fontFor(nextButton.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (exitBtn != null) {
+            exitBtn.setText(com.worldofwonder.util.I18n.get("exit_to_games"));
+            exitBtn.setFont(UITheme.fontFor(exitBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (completeTitle != null) {
+            completeTitle.setText(com.worldofwonder.util.I18n.get("quiz_victory_title"));
+        }
+        if (completeSub != null) {
+            completeSub.setText(com.worldofwonder.util.I18n.get("tagline"));
+            completeSub.setFont(UITheme.fontFor(completeSub.getText(), Font.PLAIN, UITheme.FONT_BODY));
+        }
+        if (againBtn != null) {
+            againBtn.setText(com.worldofwonder.util.I18n.get("quiz_play_again"));
+            againBtn.setFont(UITheme.fontFor(againBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (levelsCompleteBtn != null) {
+            levelsCompleteBtn.setText(com.worldofwonder.util.I18n.get("quiz_back_levels"));
+            levelsCompleteBtn.setFont(UITheme.fontFor(levelsCompleteBtn.getText(), Font.BOLD, UITheme.FONT_BUTTON));
+        }
+        if (worldsCompleteBtn != null) {
+            worldsCompleteBtn.setText(com.worldofwonder.util.I18n.get("quiz_another_world"));
+            worldsCompleteBtn.setFont(UITheme.fontFor(worldsCompleteBtn.getText(), Font.PLAIN, UITheme.FONT_BUTTON));
+        }
+        if (timerText != null) {
+            updateTimerDisplay();
+        }
+        if (streakLabel != null) {
+            updateStreakDisplay();
+        }
+        renderWorlds();
+        if (currentLevel != null && levels != null && !levels.isEmpty()) {
+            renderLevels();
+        }
+        if (questions != null && !questions.isEmpty() && questionIndex < questions.size()) {
+            renderQuestion();
+        }
+        revalidate();
+        repaint();
     }
 
     private JPanel buildWorldsPanel() {
@@ -151,13 +262,13 @@ public class QuizGameScreen extends JPanel {
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        JLabel title = UITheme.title("Choose Your World", UITheme.FONT_PAGE_TITLE);
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        header.add(title);
+        worldsTitle = UITheme.title(com.worldofwonder.util.I18n.get("quiz_choose_world"), UITheme.FONT_PAGE_TITLE);
+        worldsTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        header.add(worldsTitle);
         header.add(Box.createVerticalStrut(4));
-        JLabel sub = UITheme.subtitle("Pick a world to begin your quiz adventure");
-        sub.setAlignmentX(Component.CENTER_ALIGNMENT);
-        header.add(sub);
+        worldsSub = UITheme.subtitle(com.worldofwonder.util.I18n.get("quiz_choose_world_sub"));
+        worldsSub.setAlignmentX(Component.CENTER_ALIGNMENT);
+        header.add(worldsSub);
         header.add(Box.createVerticalStrut(6));
         statusLabel = UITheme.sectionTitle(" ", UITheme.FONT_SMALL);
         statusLabel.setForeground(UITheme.TEXT_MUTED);
@@ -179,19 +290,19 @@ public class QuizGameScreen extends JPanel {
         JPanel header = new JPanel();
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        levelsTitle = UITheme.sectionTitle("Levels", UITheme.FONT_PAGE_TITLE);
+        levelsTitle = UITheme.sectionTitle(com.worldofwonder.util.I18n.get("quiz_select_level"), UITheme.FONT_PAGE_TITLE);
         levelsTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
         header.add(levelsTitle);
         header.add(Box.createVerticalStrut(4));
-        JLabel sub = UITheme.subtitle("Pick a level to start the quiz");
-        sub.setAlignmentX(Component.CENTER_ALIGNMENT);
-        header.add(sub);
+        levelsSub = UITheme.subtitle(com.worldofwonder.util.I18n.get("quiz_choose_level_sub"));
+        levelsSub.setAlignmentX(Component.CENTER_ALIGNMENT);
+        header.add(levelsSub);
         header.add(Box.createVerticalStrut(8));
-        JButton back = UITheme.ghostButton("< Back to Worlds", UITheme.TEXT_MUTED);
-        UIUtil.fixedSize(back, 200, UITheme.BTN_H_SM);
-        back.addActionListener(e -> showWorlds());
-        back.setAlignmentX(Component.CENTER_ALIGNMENT);
-        header.add(back);
+        levelsBackBtn = UITheme.backButton(com.worldofwonder.util.I18n.get("quiz_select_world"), UITheme.TEXT_MUTED);
+        UIUtil.fixedSize(levelsBackBtn, 220, UITheme.BTN_H_SM);
+        levelsBackBtn.addActionListener(e -> showWorlds());
+        levelsBackBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        header.add(levelsBackBtn);
         header.add(Box.createVerticalStrut(4));
         panel.add(header, BorderLayout.NORTH);
 
@@ -228,12 +339,12 @@ public class QuizGameScreen extends JPanel {
         JPanel timerRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
         timerRow.setOpaque(false);
 
-        timerText = new JLabel("⏱️ 15s");
+        timerText = new JLabel("[T] 15s");
         timerText.setFont(UITheme.displayFont(Font.BOLD, 15));
         timerText.setForeground(UITheme.GREEN);
         timerRow.add(timerText);
 
-        streakLabel = new JLabel("🔥 Streak: 0");
+        streakLabel = new JLabel(I18n.get("quiz_streak", 0));
         streakLabel.setFont(UITheme.displayFont(Font.BOLD, 15));
         streakLabel.setForeground(new Color(0xff7744));
         timerRow.add(streakLabel);
@@ -275,13 +386,13 @@ public class QuizGameScreen extends JPanel {
         JPanel lifelineRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
         lifelineRow.setOpaque(false);
 
-        hintButton = UITheme.ghostButton("\uD83D\uDCA1 Show Hint", UITheme.GOLD);
-        UIUtil.fixedSize(hintButton, 150, UITheme.BTN_H_SM);
+        hintButton = UITheme.iconPillButton(UITheme.VectorIcon.LIGHTBULB, com.worldofwonder.util.I18n.get("quiz_hint"), UITheme.GOLD);
+        UIUtil.fixedSize(hintButton, 160, UITheme.BTN_H_SM);
         hintButton.addActionListener(e -> showHint());
         lifelineRow.add(hintButton);
 
-        fiftyFiftyBtn = UITheme.ghostButton("\u2702\uFE0F 50:50 Lifeline", UITheme.TEAL);
-        UIUtil.fixedSize(fiftyFiftyBtn, 160, UITheme.BTN_H_SM);
+        fiftyFiftyBtn = UITheme.iconPillButton(UITheme.VectorIcon.SEARCH, com.worldofwonder.util.I18n.get("quiz_lifeline"), UITheme.TEAL);
+        UIUtil.fixedSize(fiftyFiftyBtn, 170, UITheme.BTN_H_SM);
         fiftyFiftyBtn.addActionListener(e -> useFiftyFifty());
         lifelineRow.add(fiftyFiftyBtn);
 
@@ -295,17 +406,17 @@ public class QuizGameScreen extends JPanel {
         feedbackLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         JPanel buttonRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 0));
         buttonRow.setOpaque(false);
-        submitButton = UITheme.primaryButton("Submit Answer");
+        submitButton = UITheme.primaryButton(com.worldofwonder.util.I18n.get("quiz_submit"));
         UIUtil.fixedSize(submitButton, 210, UITheme.BTN_H);
         submitButton.addActionListener(e -> submitAnswer());
-        nextButton = UITheme.secondaryButton("Next Question");
+        nextButton = UITheme.secondaryButton(com.worldofwonder.util.I18n.get("quiz_next_question"));
         UIUtil.fixedSize(nextButton, 210, UITheme.BTN_H);
         nextButton.addActionListener(e -> nextQuestion());
         nextButton.setVisible(false);
         buttonRow.add(submitButton);
         buttonRow.add(nextButton);
 
-        JButton exitBtn = UITheme.ghostButton("🏠 Exit to Games", UITheme.CORAL);
+        exitBtn = UITheme.iconPillButton(UITheme.VectorIcon.ARROW_LEFT, com.worldofwonder.util.I18n.get("exit_to_games"), UITheme.CORAL);
         UIUtil.fixedSize(exitBtn, 170, UITheme.BTN_H);
         exitBtn.setToolTipText("Return to the main game selection menu");
         exitBtn.addActionListener(e -> {
@@ -342,12 +453,12 @@ public class QuizGameScreen extends JPanel {
         JPanel center = new JPanel();
         center.setOpaque(false);
         center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
-        completeTitle = new UITheme.GradientTextLabel("Level Complete!", 40, UITheme.GOLD, UITheme.CORAL);
+        completeTitle = new UITheme.GradientTextLabel(com.worldofwonder.util.I18n.get("quiz_victory_title"), 40, UITheme.GOLD, UITheme.CORAL);
         completeTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
         center.add(completeTitle);
-        JLabel sub = UITheme.subtitle("Great job, explorer!");
-        sub.setAlignmentX(Component.CENTER_ALIGNMENT);
-        center.add(sub);
+        completeSub = UITheme.subtitle(com.worldofwonder.util.I18n.get("tagline"));
+        completeSub.setAlignmentX(Component.CENTER_ALIGNMENT);
+        center.add(completeSub);
         completeText = new JLabel(" ", SwingConstants.CENTER);
         completeText.setFont(UITheme.bodyFont(Font.BOLD, UITheme.FONT_CARD_TITLE));
         completeText.setForeground(UITheme.GOLD);
@@ -358,22 +469,24 @@ public class QuizGameScreen extends JPanel {
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, UITheme.GAP_ELEMENT, 0));
         buttons.setOpaque(false);
         buttons.setBorder(BorderFactory.createEmptyBorder(28, 0, 0, 0));
-        JButton again = UITheme.primaryButton("Play Again");
-        UIUtil.fixedSize(again, 210, UITheme.BTN_H);
-        again.addActionListener(e -> startQuiz(currentLevel));
-        buttons.add(again);
-        JButton levelsBtn = UITheme.secondaryButton("Back to Levels");
-        UIUtil.fixedSize(levelsBtn, 210, UITheme.BTN_H);
-        levelsBtn.addActionListener(e -> showLevels());
-        buttons.add(levelsBtn);
-        JButton worldsBtn = UITheme.ghostButton("Choose Another World", UITheme.TEXT_MUTED);
-        UIUtil.fixedSize(worldsBtn, 210, UITheme.BTN_H);
-        worldsBtn.addActionListener(e -> showWorlds());
-        buttons.add(worldsBtn);
+        againBtn = UITheme.primaryButton(com.worldofwonder.util.I18n.get("quiz_play_again"));
+        UIUtil.fixedSize(againBtn, 210, UITheme.BTN_H);
+        againBtn.addActionListener(e -> startQuiz(currentLevel));
+        buttons.add(againBtn);
+        levelsCompleteBtn = UITheme.secondaryButton(com.worldofwonder.util.I18n.get("quiz_back_levels"));
+        UIUtil.fixedSize(levelsCompleteBtn, 210, UITheme.BTN_H);
+        levelsCompleteBtn.addActionListener(e -> showLevels());
+        buttons.add(levelsCompleteBtn);
+        worldsCompleteBtn = UITheme.ghostButton(com.worldofwonder.util.I18n.get("quiz_another_world"), UITheme.TEXT_MUTED);
+        UIUtil.fixedSize(worldsCompleteBtn, 210, UITheme.BTN_H);
+        worldsCompleteBtn.addActionListener(e -> showWorlds());
+        buttons.add(worldsCompleteBtn);
         center.add(buttons);
         panel.add(center, BorderLayout.CENTER);
+        this.confetti = new UITheme.Confetti(panel);
         return panel;
     }
+
 
     private void showWorlds() {
         cards.show(content, PANEL_WORLDS);
@@ -405,11 +518,41 @@ public class QuizGameScreen extends JPanel {
         renderWorlds();
     }
 
+    private String getWorldDisplayName(World world) {
+        if (world == null) return "";
+        String key = "world_" + world.getId() + "_name";
+        String localized = com.worldofwonder.util.I18n.get(key);
+        if (!localized.equals(key) && !localized.isEmpty()) {
+            return localized;
+        }
+        return world.getName();
+    }
+
+    private String getWorldDisplayDesc(World world) {
+        if (world == null) return "";
+        String key = "world_" + world.getId() + "_desc";
+        String localized = com.worldofwonder.util.I18n.get(key);
+        if (!localized.equals(key) && !localized.isEmpty()) {
+            return localized;
+        }
+        return world.getDescription();
+    }
+
+    private String getLevelDisplayName(Level level) {
+        if (level == null) return "";
+        String key = "level_" + level.getId() + "_name";
+        String localized = com.worldofwonder.util.I18n.get(key);
+        if (!localized.equals(key) && !localized.isEmpty()) {
+            return localized;
+        }
+        return level.getName();
+    }
+
     private void renderWorlds() {
         worldsList.removeAll();
         for (World world : worlds) {
-            UITheme.TileButton tile = new UITheme.TileButton(world.getName(),
-                    world.getDescription(), worldAccent(world), worldEmoji(world.getName()));
+            UITheme.TileButton tile = new UITheme.TileButton(getWorldDisplayName(world),
+                    getWorldDisplayDesc(world), worldAccent(world), worldEmoji(world.getName()));
             tile.setDark(true);
             tile.setSubtitleColor(new Color(0xd0e8f5));
             UIUtil.fixedSize(tile, 280, 148);
@@ -423,6 +566,7 @@ public class QuizGameScreen extends JPanel {
     }
 
     private void selectWorld(World world) {
+        this.currentWorld = world;
         levels = new ArrayList<>();
         try {
             levels = dashboard.getApp().getGameController().getLevelsForWorld(world.getId());
@@ -432,7 +576,8 @@ public class QuizGameScreen extends JPanel {
         if (levels == null || levels.isEmpty()) {
             levels = sample.getLevels(world.getId());
         }
-        levelsTitle.setText(worldEmoji(world.getName()) + "  " + world.getName() + " Levels");
+        levelsTitle.setText(com.worldofwonder.util.I18n.get("quiz_levels_title", getWorldDisplayName(world)));
+        levelsTitle.setFont(UITheme.fontFor(levelsTitle.getText(), Font.BOLD, UITheme.FONT_PAGE_TITLE));
         showLevels();
     }
 
@@ -440,9 +585,9 @@ public class QuizGameScreen extends JPanel {
         levelsList.removeAll();
         for (Level level : levels) {
             String subtitle = difficultyLabel(level.getDifficulty())
-                    + "  -  " + level.getPointReward() + " points";
-            UITheme.TileButton tile = new UITheme.TileButton(level.getName(),
-                    subtitle, difficultyAccent(level.getDifficulty()), "\u2b50");
+                    + "  -  " + com.worldofwonder.util.I18n.get("quiz_pts_reward", level.getPointReward());
+            UITheme.TileButton tile = new UITheme.TileButton(getLevelDisplayName(level),
+                    subtitle, difficultyAccent(level.getDifficulty()));
             tile.setDark(true);
             tile.setSubtitleColor(new Color(0xd0e8f5));
             UIUtil.fixedSize(tile, 280, 115);
@@ -463,7 +608,8 @@ public class QuizGameScreen extends JPanel {
         selectedAnswer = -1;
         streak = 0;
         fiftyFiftyUsed = false;
-        quizLevelName.setText(level.getName());
+        quizLevelName.setText(getLevelDisplayName(level));
+        quizLevelName.setFont(UITheme.fontFor(quizLevelName.getText(), Font.BOLD, UITheme.FONT_SECTION));
         cards.show(content, PANEL_QUIZ);
         try {
             questions = dashboard.getApp().getQuizController().getQuestionsForLevel(level.getId());
@@ -486,9 +632,12 @@ public class QuizGameScreen extends JPanel {
             return;
         }
         Question question = questions.get(questionIndex);
-        questionText.setText("<html><center>" + escapeHtml(question.getQuestionText()) + "</center></html>");
-        progressLabel.setText("Question " + (questionIndex + 1) + " of " + questions.size()
-                + "  -  Level Points: " + points);
+        String qText = question.getLocalizedQuestionText();
+        questionText.setText("<html><center>" + escapeHtml(qText) + "</center></html>");
+        questionText.setFont(UITheme.fontFor(qText, Font.BOLD, UITheme.FONT_CARD_TITLE));
+        progressLabel.setText(com.worldofwonder.util.I18n.get("quiz_question_counter", (questionIndex + 1), questions.size())
+                + "  -  " + com.worldofwonder.util.I18n.get("quiz_score", points));
+        progressLabel.setFont(UITheme.fontFor(progressLabel.getText(), Font.BOLD, UITheme.FONT_BODY));
         progressBar.setProgress(questionIndex / (double) questions.size());
 
         List<String> options = optionsOf(question);
@@ -547,7 +696,7 @@ public class QuizGameScreen extends JPanel {
 
     private void updateTimerDisplay() {
         if (timerText != null) {
-            timerText.setText("⏱️ " + secondsLeft + "s");
+            timerText.setText("[T] " + secondsLeft + "s");
             if (secondsLeft <= 3) {
                 timerText.setForeground(UITheme.CORAL);
             } else if (secondsLeft <= 7) {
@@ -564,16 +713,16 @@ public class QuizGameScreen extends JPanel {
     private void updateStreakDisplay() {
         if (streakLabel != null) {
             if (streak >= 5) {
-                streakLabel.setText("\uD83D\uDD25 Super Streak: " + streak + " (2x \u26A1)");
+                streakLabel.setText("Super Streak: " + streak + " (2x Bonus)");
                 streakLabel.setForeground(new Color(0xff3333));
             } else if (streak >= 3) {
-                streakLabel.setText("\uD83D\uDD25 Streak: " + streak + " (1.5x \u26A1)");
+                streakLabel.setText("Streak: " + streak + " (1.5x Bonus)");
                 streakLabel.setForeground(new Color(0xff8800));
             } else if (streak > 0) {
-                streakLabel.setText("\uD83D\uDD25 Streak: " + streak);
+                streakLabel.setText("Streak: " + streak);
                 streakLabel.setForeground(UITheme.GOLD);
             } else {
-                streakLabel.setText("Streak: 0");
+                streakLabel.setText(I18n.get("quiz_streak", 0));
                 streakLabel.setForeground(UITheme.TEXT_MUTED);
             }
         }
@@ -596,12 +745,12 @@ public class QuizGameScreen extends JPanel {
         hintButton.setEnabled(false);
         if (fiftyFiftyBtn != null) fiftyFiftyBtn.setEnabled(false);
         feedbackLabel.setForeground(UITheme.ERROR);
-        feedbackLabel.setText("⏰ Time's up! The correct answer was " + letter(correctIdx) + ".");
+        feedbackLabel.setText(com.worldofwonder.util.I18n.get("quiz_time_up", letter(correctIdx)));
         SoundUtil.playError();
         if (questionIndex == questions.size() - 1) {
-            nextButton.setText("Finish Level \u2714");
+            nextButton.setText(com.worldofwonder.util.I18n.get("quiz_finish_level"));
         } else {
-            nextButton.setText("Next Question \u2192");
+            nextButton.setText(com.worldofwonder.util.I18n.get("quiz_next_question"));
         }
         nextButton.setVisible(true);
     }
@@ -620,12 +769,12 @@ public class QuizGameScreen extends JPanel {
             if (ex >= 0 && ex < optionsPanel.getComponentCount()) {
                 UITheme.OptionButton btn = (UITheme.OptionButton) optionsPanel.getComponent(ex);
                 btn.setEnabled(false);
-                btn.setText("--- [Eliminated] ---");
+                btn.setText("--- [50:50] ---");
             }
         }
         SoundUtil.playHint();
         feedbackLabel.setForeground(UITheme.TEAL);
-        feedbackLabel.setText("✂️ 50:50 Lifeline used! Two incorrect choices removed.");
+        feedbackLabel.setText(com.worldofwonder.util.I18n.get("quiz_lifeline_used"));
     }
 
     private void selectAnswer(int idx) {
@@ -643,7 +792,7 @@ public class QuizGameScreen extends JPanel {
     private void submitAnswer() {
         if (selectedAnswer < 0) {
             feedbackLabel.setForeground(UITheme.ERROR);
-            feedbackLabel.setText("Pick an answer first!");
+            feedbackLabel.setText(com.worldofwonder.util.I18n.get("quiz_pick_answer"));
             SoundUtil.playError();
             return;
         }
@@ -669,13 +818,13 @@ public class QuizGameScreen extends JPanel {
                 dashboard.addGamePoints(awarded);
             }
             feedbackLabel.setForeground(UITheme.GREEN);
-            String streakText = streak >= 5 ? " \uD83D\uDD25 (2x Streak Bonus!)" : (streak >= 3 ? " \uD83D\uDD25 (1.5x Streak Bonus!)" : "");
-            feedbackLabel.setText("Correct!" + streakText + " +" + awarded + " points");
+            String streakText = streak >= 5 ? " (2x)" : (streak >= 3 ? " (1.5x)" : "");
+            feedbackLabel.setText(com.worldofwonder.util.I18n.get("quiz_correct_feedback", streakText, awarded));
         } else {
             streak = 0;
             SoundUtil.playError();
             feedbackLabel.setForeground(UITheme.ERROR);
-            feedbackLabel.setText("Not quite. The answer is " + letter(correctIndex(question)) + ".");
+            feedbackLabel.setText(com.worldofwonder.util.I18n.get("quiz_wrong_feedback", letter(correctIndex(question))));
         }
         updateStreakDisplay();
 
@@ -693,9 +842,9 @@ public class QuizGameScreen extends JPanel {
         progressBar.setProgress((questionIndex + 1) / (double) questions.size());
 
         if (questionIndex == questions.size() - 1) {
-            nextButton.setText("View Results \u2192");
+            nextButton.setText(com.worldofwonder.util.I18n.get("quiz_view_results"));
         } else {
-            nextButton.setText("Next Question \u2192");
+            nextButton.setText(com.worldofwonder.util.I18n.get("quiz_next_question"));
         }
         nextButton.setVisible(true);
     }
@@ -712,9 +861,10 @@ public class QuizGameScreen extends JPanel {
 
     private void showHint() {
         Question question = questions.get(questionIndex);
-        String hint = question.getHint() == null || question.getHint().isEmpty()
-                ? "No hint available." : question.getHint();
+        String hint = question.getLocalizedHint() == null || question.getLocalizedHint().isEmpty()
+                ? "No hint available." : question.getLocalizedHint();
         hintLabel.setText("<html><div style='padding:2px 6px;'>" + escapeHtml(hint) + "</div></html>");
+        hintLabel.setFont(UITheme.fontFor(hint, Font.PLAIN, UITheme.FONT_BODY));
         hintLabel.setVisible(true);
         hintButton.setEnabled(false);
         SoundUtil.playHint();
@@ -723,11 +873,9 @@ public class QuizGameScreen extends JPanel {
     private void showLevelComplete() {
         stopTimer();
         SoundUtil.playVictory();
-        double ratio = (questions == null || questions.isEmpty()) ? 0 : (double) score / questions.size();
-        String stars = ratio >= 0.85 ? "\u2B50\u2B50\u2B50" : (ratio >= 0.5 ? "\u2B50\u2B50" : "\u2B50");
-        completeTitle.setText("Level Complete! " + stars);
-        completeText.setText("<html><center>You scored " + score + " of " + (questions != null ? questions.size() : 0)
-                + " correct.<br><span style='color:#ffd700;font-size:16px;'>Total Earned: +" + points + " points!</span></center></html>");
+        completeTitle.setText(com.worldofwonder.util.I18n.get("quiz_victory_title"));
+        completeText.setText("<html><center>" + com.worldofwonder.util.I18n.get("quiz_score_summary", score, (questions != null ? questions.size() : 0))
+                + "<br><span style='color:#ffd700;font-size:16px;'>" + com.worldofwonder.util.I18n.get("quiz_total_earned", points) + "</span></center></html>");
         cards.show(content, PANEL_COMPLETE);
         confetti.launch();
     }
@@ -742,10 +890,10 @@ public class QuizGameScreen extends JPanel {
 
     private static List<String> optionsOf(Question q) {
         List<String> options = new ArrayList<>();
-        options.add(q.getOptionA() == null ? "" : q.getOptionA());
-        options.add(q.getOptionB() == null ? "" : q.getOptionB());
-        options.add(q.getOptionC() == null ? "" : q.getOptionC());
-        options.add(q.getOptionD() == null ? "" : q.getOptionD());
+        options.add(q.getLocalizedOptionA() == null ? "" : q.getLocalizedOptionA());
+        options.add(q.getLocalizedOptionB() == null ? "" : q.getLocalizedOptionB());
+        options.add(q.getLocalizedOptionC() == null ? "" : q.getLocalizedOptionC());
+        options.add(q.getLocalizedOptionD() == null ? "" : q.getLocalizedOptionD());
         return options;
     }
 
@@ -769,26 +917,7 @@ public class QuizGameScreen extends JPanel {
     }
 
     private static String worldEmoji(String name) {
-        if (name == null) {
-            return "\uD83C\uDF0D";
-        }
-        String n = name.toLowerCase();
-        if (n.contains("space") || n.contains("galax") || n.contains("solar")) {
-            return "\uD83D\uDE80";
-        }
-        if (n.contains("ocean") || n.contains("deep sea") || n.contains("reef") || n.contains("sea")) {
-            return "\uD83C\uDF0A";
-        }
-        if (n.contains("egypt") || n.contains("nile")) {
-            return "\uD83C\uDFDB";
-        }
-        if (n.contains("rainforest") || n.contains("jungle")) {
-            return "\uD83C\uDF33";
-        }
-        if (n.contains("mountain")) {
-            return "\u26F0";
-        }
-        return "\uD83C\uDF0D";
+        return "";
     }
 
     private static Color difficultyAccent(String difficulty) {
@@ -811,13 +940,14 @@ public class QuizGameScreen extends JPanel {
         }
         String d = difficulty.toLowerCase();
         if (d.equals("easy")) {
-            return "Easy";
+            return com.worldofwonder.util.I18n.get("diff_easy");
         }
         if (d.equals("hard")) {
-            return "Hard";
+            return com.worldofwonder.util.I18n.get("diff_hard");
         }
-        return "Medium";
+        return com.worldofwonder.util.I18n.get("diff_medium");
     }
+
 
     private static String escapeHtml(String s) {
         if (s == null) {

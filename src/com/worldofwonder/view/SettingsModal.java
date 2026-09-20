@@ -12,14 +12,23 @@ import java.awt.geom.RoundRectangle2D;
 public class SettingsModal extends JDialog {
 
     private final JFrame parent;
+    private final JLabel titleLabel;
+    private final JLabel subLabel;
+    private final JLabel themeTitleLabel;
+    private final JLabel langTitleLabel;
+    private final JLabel audioTitleLabel;
+    private final JButton langBtn;
     private final JButton sfxToggleBtn;
+    private final JButton testSoundBtn;
+    private final JButton closeBtn;
     private final JPanel themeCardsPanel;
+    private final Runnable langListener;
 
     public SettingsModal(JFrame parent) {
-        super(parent, "Settings & Customization", true);
+        super(parent, com.worldofwonder.util.I18n.get("settings_title"), true);
         this.parent = parent;
 
-        setSize(620, 540);
+        setSize(640, 620);
         setLocationRelativeTo(parent);
         setResizable(false);
 
@@ -32,17 +41,22 @@ public class SettingsModal extends JDialog {
         header.setOpaque(false);
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
 
-        JLabel title = UITheme.title("Game Settings & Appearance", 22);
-        title.setForeground(UITheme.GOLD);
-        title.setAlignmentX(Component.LEFT_ALIGNMENT);
-        header.add(title);
+        JPanel titleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        titleRow.setOpaque(false);
+        titleRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titleRow.add(UITheme.vectorIcon(UITheme.VectorIcon.GEAR, 26, UITheme.GOLD));
+
+        titleLabel = UITheme.title(com.worldofwonder.util.I18n.get("settings_title"), 22);
+        titleLabel.setForeground(UITheme.GOLD);
+        titleRow.add(titleLabel);
+        header.add(titleRow);
         header.add(Box.createVerticalStrut(4));
 
-        JLabel sub = new JLabel("Customize visual themes, switch dark/light mode, and toggle audio.");
-        sub.setFont(UITheme.bodyFont(Font.PLAIN, 13));
-        sub.setForeground(UITheme.TEXT_MUTED);
-        sub.setAlignmentX(Component.LEFT_ALIGNMENT);
-        header.add(sub);
+        subLabel = new JLabel(com.worldofwonder.util.I18n.get("settings_sub"));
+        subLabel.setFont(UITheme.bodyFont(Font.PLAIN, 13));
+        subLabel.setForeground(UITheme.TEXT_MUTED);
+        subLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        header.add(subLabel);
 
         content.add(header, BorderLayout.NORTH);
 
@@ -52,11 +66,11 @@ public class SettingsModal extends JDialog {
         body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
 
         // Theme Mode Section
-        JLabel themeTitle = new JLabel("Visual Theme & Color Palette");
-        themeTitle.setFont(UITheme.displayFont(Font.BOLD, 15));
-        themeTitle.setForeground(UITheme.ICE);
-        themeTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        body.add(themeTitle);
+        themeTitleLabel = new JLabel(com.worldofwonder.util.I18n.get("settings_theme_title"));
+        themeTitleLabel.setFont(UITheme.displayFont(Font.BOLD, 15));
+        themeTitleLabel.setForeground(UITheme.ICE);
+        themeTitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        body.add(themeTitleLabel);
         body.add(Box.createVerticalStrut(10));
 
         themeCardsPanel = new JPanel(new GridLayout(2, 2, 12, 12));
@@ -64,22 +78,48 @@ public class SettingsModal extends JDialog {
         themeCardsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         rebuildThemeButtons();
         body.add(themeCardsPanel);
-        body.add(Box.createVerticalStrut(22));
+        body.add(Box.createVerticalStrut(18));
+
+        // Language Section
+        langTitleLabel = new JLabel(com.worldofwonder.util.I18n.get("settings_lang_title"));
+        langTitleLabel.setFont(UITheme.displayFont(Font.BOLD, 15));
+        langTitleLabel.setForeground(UITheme.ICE);
+        langTitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        body.add(langTitleLabel);
+        body.add(Box.createVerticalStrut(8));
+
+        JPanel langRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        langRow.setOpaque(false);
+        langRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        String currentLangText = com.worldofwonder.util.I18n.isKhmer() ? "ភាសាខ្មែរ" : "English";
+        langBtn = UITheme.iconPillButton(UITheme.VectorIcon.GLOBE, com.worldofwonder.util.I18n.get("lang_active", currentLangText), UITheme.GOLD);
+        langBtn.setPreferredSize(new Dimension(220, UITheme.BTN_H_SM));
+        langBtn.addActionListener(e -> {
+            SoundUtil.playClick();
+            com.worldofwonder.util.I18n.toggleLanguage();
+            if (parent != null) {
+                parent.repaint();
+            }
+        });
+        langRow.add(langBtn);
+        body.add(langRow);
+        body.add(Box.createVerticalStrut(18));
 
         // Sound Settings Section
-        JLabel audioTitle = new JLabel("Audio & Sound Effects");
-        audioTitle.setFont(UITheme.displayFont(Font.BOLD, 15));
-        audioTitle.setForeground(UITheme.ICE);
-        audioTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-        body.add(audioTitle);
+        audioTitleLabel = new JLabel(com.worldofwonder.util.I18n.get("settings_audio_title"));
+        audioTitleLabel.setFont(UITheme.displayFont(Font.BOLD, 15));
+        audioTitleLabel.setForeground(UITheme.ICE);
+        audioTitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        body.add(audioTitleLabel);
         body.add(Box.createVerticalStrut(10));
 
         JPanel audioRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         audioRow.setOpaque(false);
         audioRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        sfxToggleBtn = UITheme.primaryButton(SoundUtil.isMuted() ? "SFX: Muted (Off)" : "SFX: Enabled (On)");
-        sfxToggleBtn.setPreferredSize(new Dimension(170, UITheme.BTN_H_SM));
+        sfxToggleBtn = UITheme.primaryButton(com.worldofwonder.util.I18n.get(SoundUtil.isMuted() ? "sfx_muted" : "sfx_enabled"));
+        sfxToggleBtn.setPreferredSize(new Dimension(180, UITheme.BTN_H_SM));
         sfxToggleBtn.addActionListener(e -> {
             SoundUtil.toggleMute();
             updateSfxButtonState();
@@ -89,13 +129,16 @@ public class SettingsModal extends JDialog {
         });
         audioRow.add(sfxToggleBtn);
 
-        JButton testSoundBtn = UITheme.ghostButton("Play Test Chime", UITheme.TEAL);
-        testSoundBtn.setPreferredSize(new Dimension(150, UITheme.BTN_H_SM));
+        testSoundBtn = UITheme.ghostButton(com.worldofwonder.util.I18n.get("test_sound"), UITheme.TEAL);
+        testSoundBtn.setPreferredSize(new Dimension(170, UITheme.BTN_H_SM));
         testSoundBtn.addActionListener(e -> {
             if (!SoundUtil.isMuted()) {
                 SoundUtil.playVictory();
             } else {
-                JOptionPane.showMessageDialog(this, "Sound is currently muted! Enable SFX first.", "Sound Muted", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        com.worldofwonder.util.I18n.get("sound_muted_msg"),
+                        com.worldofwonder.util.I18n.get("sound_muted_title"),
+                        JOptionPane.INFORMATION_MESSAGE);
             }
         });
         audioRow.add(testSoundBtn);
@@ -107,8 +150,8 @@ public class SettingsModal extends JDialog {
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         footer.setOpaque(false);
 
-        JButton closeBtn = UITheme.glowButton("Save & Close", UITheme.TEAL, UITheme.VIOLET);
-        closeBtn.setPreferredSize(new Dimension(140, UITheme.BTN_H_SM));
+        closeBtn = UITheme.glowButton(com.worldofwonder.util.I18n.get("btn_save_close"), UITheme.TEAL, UITheme.VIOLET);
+        closeBtn.setPreferredSize(new Dimension(150, UITheme.BTN_H_SM));
         closeBtn.addActionListener(e -> {
             SoundUtil.playClick();
             dispose();
@@ -117,14 +160,52 @@ public class SettingsModal extends JDialog {
 
         content.add(footer, BorderLayout.SOUTH);
         setContentPane(content);
+
+        // Register language change listener
+        this.langListener = this::refreshText;
+        com.worldofwonder.util.I18n.addLanguageListener(langListener);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent e) {
+                com.worldofwonder.util.I18n.removeLanguageListener(langListener);
+            }
+        });
+    }
+
+    private void refreshText() {
+        setTitle(com.worldofwonder.util.I18n.get("settings_title"));
+        titleLabel.setText(com.worldofwonder.util.I18n.get("settings_title"));
+        titleLabel.setFont(UITheme.fontFor(titleLabel.getText(), Font.BOLD, 22));
+
+        subLabel.setText(com.worldofwonder.util.I18n.get("settings_sub"));
+        subLabel.setFont(UITheme.fontFor(subLabel.getText(), Font.PLAIN, 13));
+
+        themeTitleLabel.setText(com.worldofwonder.util.I18n.get("settings_theme_title"));
+        themeTitleLabel.setFont(UITheme.fontFor(themeTitleLabel.getText(), Font.BOLD, 15));
+
+        langTitleLabel.setText(com.worldofwonder.util.I18n.get("settings_lang_title"));
+        langTitleLabel.setFont(UITheme.fontFor(langTitleLabel.getText(), Font.BOLD, 15));
+
+        String currentLangText = com.worldofwonder.util.I18n.isKhmer() ? "ភាសាខ្មែរ" : "English";
+        langBtn.setText(com.worldofwonder.util.I18n.get("lang_active", currentLangText));
+
+        audioTitleLabel.setText(com.worldofwonder.util.I18n.get("settings_audio_title"));
+        audioTitleLabel.setFont(UITheme.fontFor(audioTitleLabel.getText(), Font.BOLD, 15));
+
+        updateSfxButtonState();
+        testSoundBtn.setText(com.worldofwonder.util.I18n.get("test_sound"));
+        closeBtn.setText(com.worldofwonder.util.I18n.get("btn_save_close"));
+
+        revalidate();
+        repaint();
     }
 
     private void updateSfxButtonState() {
         if (SoundUtil.isMuted()) {
-            sfxToggleBtn.setText("SFX: Muted (Off)");
+            sfxToggleBtn.setText(com.worldofwonder.util.I18n.get("sfx_muted"));
             sfxToggleBtn.setBackground(UITheme.CORAL_DARK);
         } else {
-            sfxToggleBtn.setText("SFX: Enabled (On)");
+            sfxToggleBtn.setText(com.worldofwonder.util.I18n.get("sfx_enabled"));
             sfxToggleBtn.setBackground(UITheme.TEAL_DARK);
         }
         sfxToggleBtn.repaint();
@@ -169,19 +250,21 @@ public class SettingsModal extends JDialog {
                 }
 
                 // Text
-                g2.setFont(UITheme.displayFont(Font.BOLD, 13));
+                String themeName = getThemeName(palette);
+                g2.setFont(UITheme.fontFor(themeName, Font.BOLD, 13));
                 g2.setColor(palette.isLight ? new Color(15, 30, 60) : Color.WHITE);
-                g2.drawString(palette.displayName, 14, 28);
+                g2.drawString(themeName, 14, 28);
 
                 // Subtitle / Active indicator
-                g2.setFont(UITheme.bodyFont(Font.PLAIN, 11));
+                String sub = isActive ? com.worldofwonder.util.I18n.get("theme_active")
+                        : (palette.isLight ? com.worldofwonder.util.I18n.get("theme_light_mode") : com.worldofwonder.util.I18n.get("theme_dark_mode"));
+                g2.setFont(UITheme.fontFor(sub, Font.PLAIN, 11));
                 if (isActive) {
                     g2.setColor(palette.isLight ? new Color(0, 110, 80) : UITheme.GOLD);
-                    g2.drawString("[Active Theme]", 14, 48);
                 } else {
                     g2.setColor(palette.isLight ? new Color(70, 90, 120) : UITheme.TEXT_MUTED);
-                    g2.drawString(palette.isLight ? "Light Mode" : "Dark Mode", 14, 48);
                 }
+                g2.drawString(sub, 14, 48);
 
                 g2.dispose();
             }
@@ -202,5 +285,21 @@ public class SettingsModal extends JDialog {
         });
 
         return btn;
+    }
+
+    private String getThemeName(UITheme.ThemePalette palette) {
+        if (palette == null) return "";
+        switch (palette) {
+            case MIDNIGHT:
+                return com.worldofwonder.util.I18n.get("theme_midnight");
+            case OCEAN:
+                return com.worldofwonder.util.I18n.get("theme_ocean");
+            case AMETHYST:
+                return com.worldofwonder.util.I18n.get("theme_amethyst");
+            case DAYLIGHT_LIGHT:
+                return com.worldofwonder.util.I18n.get("theme_daylight");
+            default:
+                return palette.displayName;
+        }
     }
 }

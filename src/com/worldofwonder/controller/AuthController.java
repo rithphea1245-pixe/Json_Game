@@ -35,71 +35,75 @@ public class AuthController {
         this.userRepository = userRepository;
     }
 
+    public UserRepository getUserRepository() {
+        return userRepository;
+    }
+
     public AuthResult login(String username, String password) {
         if (username == null || username.trim().isEmpty()) {
-            return new AuthResult(false, "Username cannot be empty", null);
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_empty_login"), null);
         }
         if (password == null || password.trim().isEmpty()) {
-            return new AuthResult(false, "Password cannot be empty", null);
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_empty_login"), null);
         }
 
         String trimmedUser = username.trim();
 
-        // Hardcoded admin quick-access check
-        if ("admin".equalsIgnoreCase(trimmedUser) && "hengheng168".equals(password)) {
-            User admin = userRepository.findByUsername("admin");
-            if (admin == null) {
-                admin = new User(1, "admin", "admin@worldofwonder.com", "hengheng168", 100);
-                admin.setAdmin(true);
-            }
-            this.currentUser = admin;
-            return new AuthResult(true, "Admin login successful", admin);
-        }
-
         User user = userRepository.findByUsername(trimmedUser);
         if (user == null) {
-            return new AuthResult(false, "User not found", null);
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_user_not_found"), null);
         }
 
-        if (!password.equals(user.getPassword())) {
-            return new AuthResult(false, "Incorrect password", null);
+        if (!userRepository.verifyPassword(user, password)) {
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_wrong_pass"), null);
         }
 
         this.currentUser = user;
-        return new AuthResult(true, "Login successful", user);
+        return new AuthResult(true, com.worldofwonder.util.I18n.get("msg_login_success", user.getUsername()), user);
     }
 
     public AuthResult register(String username, String email, String password) {
         if (username == null || username.trim().isEmpty()) {
-            return new AuthResult(false, "Username is required", null);
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_empty_register"), null);
         }
         if (email == null || email.trim().isEmpty()) {
-            return new AuthResult(false, "Email is required", null);
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_empty_register"), null);
         }
         if (password == null || password.trim().isEmpty()) {
-            return new AuthResult(false, "Password is required", null);
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_empty_register"), null);
         }
 
         String cleanUsername = username.trim();
         String cleanEmail = email.trim();
 
         if (cleanUsername.length() < 3) {
-            return new AuthResult(false, "Username must be at least 3 characters", null);
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_user_short"), null);
         }
-        if (!cleanEmail.contains("@") || !cleanEmail.contains(".")) {
-            return new AuthResult(false, "Invalid email format", null);
+        if (!cleanUsername.matches("^[a-zA-Z0-9_.-]+$")) {
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_user_chars"), null);
+        }
+        if (!cleanEmail.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_email_invalid"), null);
         }
         if (password.length() < 4) {
-            return new AuthResult(false, "Password must be at least 4 characters", null);
+            return new AuthResult(false, com.worldofwonder.util.I18n.get("err_pass_short"), null);
         }
 
         try {
             User newUser = new User(cleanUsername, cleanEmail, password);
+            newUser.setTotalPoints(0);
+            newUser.setAdmin(false);
             userRepository.createUser(newUser);
             this.currentUser = newUser;
-            return new AuthResult(true, "Registration successful", newUser);
+            return new AuthResult(true, com.worldofwonder.util.I18n.get("msg_register_success", newUser.getUsername()), newUser);
         } catch (IllegalArgumentException e) {
-            return new AuthResult(false, e.getMessage(), null);
+            String msg = e.getMessage();
+            if ("Username already exists".equalsIgnoreCase(msg)) {
+                msg = com.worldofwonder.util.I18n.get("err_user_exists");
+            } else if ("Email is already registered".equalsIgnoreCase(msg)) {
+                msg = com.worldofwonder.util.I18n.get("err_email_exists");
+            }
+            return new AuthResult(false, msg, null);
         } catch (Exception e) {
             return new AuthResult(false, "Failed to register: " + e.getMessage(), null);
         }

@@ -84,10 +84,10 @@ public class User {
     }
 
     public String getRankTitle() {
-        if (totalPoints >= 600) return "Legendary Wonderer";
-        if (totalPoints >= 300) return "Gold Master";
-        if (totalPoints >= 150) return "Silver Scholar";
-        if (totalPoints >= 50) return "Bronze Adventurer";
-        return "Novice Explorer";
+        if (totalPoints >= 600) return com.worldofwonder.util.I18n.get("rank_legendary");
+        if (totalPoints >= 300) return com.worldofwonder.util.I18n.get("rank_gold");
+        if (totalPoints >= 150) return com.worldofwonder.util.I18n.get("rank_silver");
+        if (totalPoints >= 50) return com.worldofwonder.util.I18n.get("rank_bronze");
+        return com.worldofwonder.util.I18n.get("rank_novice");
     }
 }

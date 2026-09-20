@@ -3,6 +3,7 @@ package com.worldofwonder.view;
 import com.worldofwonder.model.*;
 import com.worldofwonder.controller.*;
 
+import com.worldofwonder.util.I18n;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -65,9 +66,19 @@ public class CupsWaterSortGameScreen extends JPanel {
     };
 
     private static String colorName(Color c) {
+        if (c == null) return com.worldofwonder.util.I18n.get("tube_empty");
         for (int i = 0; i < WATER_COLORS.length; i++) {
             if (WATER_COLORS[i].getRGB() == c.getRGB()) {
-                return WATER_NAMES[i];
+                switch (i) {
+                    case 0: return com.worldofwonder.util.I18n.get("tube_ruby");
+                    case 1: return com.worldofwonder.util.I18n.get("tube_emerald");
+                    case 2: return com.worldofwonder.util.I18n.get("tube_ocean");
+                    case 3: return com.worldofwonder.util.I18n.get("tube_gold");
+                    case 4: return com.worldofwonder.util.I18n.get("tube_amethyst");
+                    case 5: return com.worldofwonder.util.I18n.get("tube_tangerine");
+                    case 6: return com.worldofwonder.util.I18n.get("tube_teal");
+                    case 7: return com.worldofwonder.util.I18n.get("tube_orchid");
+                }
             }
         }
         return "Water";
@@ -95,6 +106,11 @@ public class CupsWaterSortGameScreen extends JPanel {
     private PourAnim pourAnim;
     private int extraTubesUsed = 0;
     private JButton extraTubeBtn;
+    private JButton restartBtn;
+    private JButton changeDiffBtn;
+    private JButton newGameBtn;
+    private JButton exitBtn;
+    private final Runnable langListener = this::refreshLanguage;
 
     public CupsWaterSortGameScreen(Dashboard dashboard) {
         super(new BorderLayout());
@@ -113,14 +129,16 @@ public class CupsWaterSortGameScreen extends JPanel {
         this.completePanel = buildCompletePanel();
         this.confetti = new UITheme.Confetti(completePanel);
 
+        content.setOpaque(false);
         content.add(buildDifficultyPanel(), VIEW_DIFFICULTY);
         content.add(buildGamePanel(), VIEW_GAME);
         content.add(completePanel, VIEW_COMPLETE);
 
-        JPanel viewCard = UITheme.card(new BorderLayout());
+        this.viewCard = UITheme.card(new BorderLayout());
         viewCard.setBorder(BorderFactory.createEmptyBorder(UITheme.PAD_CARD_Y, UITheme.PAD_CARD_X, UITheme.PAD_CARD_Y, UITheme.PAD_CARD_X));
         UIUtil.fixedSize(viewCard, 1020, 700);
-        viewCard.add(buildHeader(), BorderLayout.NORTH);
+        this.headerPanel = buildHeader();
+        viewCard.add(headerPanel, BorderLayout.NORTH);
         viewCard.add(content, BorderLayout.CENTER);
 
         JPanel root = UITheme.screenPage(viewCard);
@@ -131,27 +149,75 @@ public class CupsWaterSortGameScreen extends JPanel {
 
         cards.show(content, VIEW_DIFFICULTY);
         newGame();
+        I18n.addLanguageListener(langListener);
     }
 
+    private final JPanel viewCard;
+    private JPanel headerPanel;
+
+    /** Called when language changes - refreshes labels in cups water sort screen. */
+    private void refreshLanguage() {
+        if (headerPanel != null && viewCard != null) {
+            viewCard.remove(headerPanel);
+            headerPanel = buildHeader();
+            viewCard.add(headerPanel, BorderLayout.NORTH);
+        }
+        if (movesLabel != null) {
+            movesLabel.setText(I18n.get("cups_moves", moves));
+        }
+        if (difficultyLabel != null) {
+            String diffStr = colorCount <= 4 ? com.worldofwonder.util.I18n.get("diff_easy")
+                           : colorCount <= 6 ? com.worldofwonder.util.I18n.get("diff_medium")
+                           : com.worldofwonder.util.I18n.get("diff_hard");
+            difficultyLabel.setText(com.worldofwonder.util.I18n.get("choose_difficulty") + ": " + diffStr);
+        }
+        if (restartBtn != null) {
+            restartBtn.setText(com.worldofwonder.util.I18n.get("cups_restart"));
+            restartBtn.setFont(UITheme.fontFor(restartBtn.getText(), Font.BOLD, 13));
+        }
+        if (extraTubeBtn != null) {
+            extraTubeBtn.setText(com.worldofwonder.util.I18n.get("cups_extra_tube"));
+            extraTubeBtn.setFont(UITheme.fontFor(extraTubeBtn.getText(), Font.BOLD, 13));
+        }
+        if (changeDiffBtn != null) {
+            changeDiffBtn.setText(com.worldofwonder.util.I18n.get("cups_change_diff"));
+            changeDiffBtn.setFont(UITheme.fontFor(changeDiffBtn.getText(), Font.BOLD, 13));
+        }
+        if (newGameBtn != null) {
+            newGameBtn.setText(com.worldofwonder.util.I18n.get("cups_new_game"));
+            newGameBtn.setFont(UITheme.fontFor(newGameBtn.getText(), Font.BOLD, 13));
+        }
+        if (exitBtn != null) {
+            exitBtn.setText(com.worldofwonder.util.I18n.get("exit_to_games"));
+            exitBtn.setFont(UITheme.fontFor(exitBtn.getText(), Font.BOLD, 13));
+        }
+        if (board != null) {
+            board.repaint();
+        }
+        revalidate();
+        repaint();
+    }
+
+
     private JPanel buildHeader() {
-        JButton back = UITheme.ghostButton("🏠 Back to Games", UITheme.CORAL);
-        UIUtil.fixedSize(back, 180, UITheme.BTN_H);
+        JButton back = UITheme.backButton(com.worldofwonder.util.I18n.get("back_to_games"), UITheme.CORAL);
+        UIUtil.fixedSize(back, 190, UITheme.BTN_H);
         back.addActionListener(e -> dashboard.showDashboard());
-        return UITheme.screenHeader(back, "Cups Water Sort", 30);
+        return UITheme.screenHeader(back, com.worldofwonder.util.I18n.get("game_cups_title"), 30);
     }
 
     private JPanel buildDifficultyPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
 
-        panel.add(UITheme.sectionTitle("Choose your difficulty", 26), BorderLayout.NORTH);
+        panel.add(UITheme.sectionTitle(com.worldofwonder.util.I18n.get("choose_difficulty"), 26), BorderLayout.NORTH);
 
         JPanel buttons = new JPanel(new GridLayout(3, 1, 0, 20));
         buttons.setOpaque(false);
         buttons.setBorder(BorderFactory.createEmptyBorder(28, 34, 0, 34));
-        buttons.add(difficultyTile("Easy", "4 colors \u2022 2 empty cups", UITheme.GREEN, 4));
-        buttons.add(difficultyTile("Medium", "6 colors \u2022 2 empty cups", UITheme.GOLD, 6));
-        buttons.add(difficultyTile("Hard", "8 colors \u2022 2 empty cups", UITheme.CORAL, 8));
+        buttons.add(difficultyTile(com.worldofwonder.util.I18n.get("diff_easy"), com.worldofwonder.util.I18n.get("diff_easy_desc"), UITheme.GREEN, 4));
+        buttons.add(difficultyTile(com.worldofwonder.util.I18n.get("diff_medium"), com.worldofwonder.util.I18n.get("diff_medium_desc"), UITheme.GOLD, 6));
+        buttons.add(difficultyTile(com.worldofwonder.util.I18n.get("diff_hard"), com.worldofwonder.util.I18n.get("diff_hard_desc"), UITheme.CORAL, 8));
 
         JPanel wrap = UIUtil.centered(buttons);
         wrap.setOpaque(false);
@@ -191,29 +257,29 @@ public class CupsWaterSortGameScreen extends JPanel {
         actions.setOpaque(false);
         actions.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
 
-        JButton restart = UITheme.ghostButton("Restart", UITheme.TEXT_MUTED);
-        UIUtil.fixedSize(restart, 140, 48);
-        restart.addActionListener(e -> restartCurrentGame());
-        actions.add(restart);
+        restartBtn = UITheme.iconPillButton(UITheme.VectorIcon.REFRESH, com.worldofwonder.util.I18n.get("cups_restart"), UITheme.TEAL);
+        UIUtil.fixedSize(restartBtn, 130, 46);
+        restartBtn.addActionListener(e -> restartCurrentGame());
+        actions.add(restartBtn);
 
-        extraTubeBtn = UITheme.accentButton("\uD83E\uDDEA +1 Extra Tube", UITheme.TEAL);
-        UIUtil.fixedSize(extraTubeBtn, 175, 48);
+        extraTubeBtn = UITheme.iconPillButton(UITheme.VectorIcon.PLUS, com.worldofwonder.util.I18n.get("cups_extra_tube"), UITheme.GREEN);
+        UIUtil.fixedSize(extraTubeBtn, 160, 46);
         extraTubeBtn.setToolTipText("Add an extra empty tube to solve tricky puzzles");
         extraTubeBtn.addActionListener(e -> addExtraTube());
         actions.add(extraTubeBtn);
 
-        JButton change = UITheme.ghostButton("Change Difficulty", UITheme.TEXT_MUTED);
-        UIUtil.fixedSize(change, 160, 48);
-        change.addActionListener(e -> showDifficulty());
-        actions.add(change);
+        changeDiffBtn = UITheme.iconPillButton(UITheme.VectorIcon.GEAR, com.worldofwonder.util.I18n.get("cups_change_diff"), UITheme.VIOLET);
+        UIUtil.fixedSize(changeDiffBtn, 160, 46);
+        changeDiffBtn.addActionListener(e -> showDifficulty());
+        actions.add(changeDiffBtn);
 
-        JButton newGame = UITheme.primaryButton("New Game");
-        UIUtil.fixedSize(newGame, 140, 48);
-        newGame.addActionListener(e -> newGame());
-        actions.add(newGame);
+        newGameBtn = UITheme.primaryButton(com.worldofwonder.util.I18n.get("cups_new_game"));
+        UIUtil.fixedSize(newGameBtn, 130, 46);
+        newGameBtn.addActionListener(e -> newGame());
+        actions.add(newGameBtn);
 
-        JButton exitBtn = UITheme.ghostButton("🏠 Exit to Games", UITheme.CORAL);
-        UIUtil.fixedSize(exitBtn, 160, 48);
+        exitBtn = UITheme.iconPillButton(UITheme.VectorIcon.ARROW_LEFT, com.worldofwonder.util.I18n.get("exit_to_games"), UITheme.CORAL);
+        UIUtil.fixedSize(exitBtn, 150, 46);
         exitBtn.setToolTipText("Return to the main game selection menu");
         exitBtn.addActionListener(e -> dashboard.showDashboard());
         actions.add(exitBtn);
@@ -238,7 +304,7 @@ public class CupsWaterSortGameScreen extends JPanel {
         panel.setOpaque(false);
 
         UITheme.GradientTextLabel title =
-                new UITheme.GradientTextLabel("Cups Solved!", 34, UITheme.GOLD, UITheme.TEAL);
+                new UITheme.GradientTextLabel(com.worldofwonder.util.I18n.get("cups_solved_title"), 34, UITheme.GOLD, UITheme.TEAL);
         panel.add(title, BorderLayout.NORTH);
         panel.add(completeText, BorderLayout.CENTER);
 
@@ -246,17 +312,17 @@ public class CupsWaterSortGameScreen extends JPanel {
         buttons.setOpaque(false);
         buttons.setBorder(BorderFactory.createEmptyBorder(20, 34, 0, 34));
 
-        JButton again = UITheme.primaryButton("New Puzzle");
+        JButton again = UITheme.primaryButton(com.worldofwonder.util.I18n.get("quiz_play_again"));
         UIUtil.fixedSize(again, 340, 54);
         again.addActionListener(e -> startGame(colorCount));
         buttons.add(again);
 
-        JButton change = UITheme.ghostButton("Change Difficulty", UITheme.TEXT_MUTED);
+        JButton change = UITheme.ghostButton(com.worldofwonder.util.I18n.get("cups_change_diff"), UITheme.TEXT_MUTED);
         UIUtil.fixedSize(change, 340, 54);
         change.addActionListener(e -> showDifficulty());
         buttons.add(change);
 
-        JButton dashboardBtn = UITheme.ghostButton("Back to Dashboard", UITheme.TEXT_MUTED);
+        JButton dashboardBtn = UITheme.iconPillButton(UITheme.VectorIcon.ARROW_LEFT, com.worldofwonder.util.I18n.get("back_to_dashboard"), UITheme.TEXT_MUTED);
         UIUtil.fixedSize(dashboardBtn, 340, 54);
         dashboardBtn.addActionListener(e -> dashboard.showDashboard());
         buttons.add(dashboardBtn);
@@ -273,10 +339,14 @@ public class CupsWaterSortGameScreen extends JPanel {
         won = false;
         selected = null;
         moves = 0;
-        difficultyLabel.setText("Difficulty: " + (colors <= 4 ? "Easy" : colors <= 6 ? "Medium" : "Hard"));
+        String diffStr = colors <= 4 ? com.worldofwonder.util.I18n.get("diff_easy")
+                       : colors <= 6 ? com.worldofwonder.util.I18n.get("diff_medium")
+                       : com.worldofwonder.util.I18n.get("diff_hard");
+        difficultyLabel.setText(com.worldofwonder.util.I18n.get("choose_difficulty") + ": " + diffStr);
         newGame();
         cards.show(content, VIEW_GAME);
     }
+
 
     private void showDifficulty() {
         cards.show(content, VIEW_DIFFICULTY);
@@ -400,7 +470,7 @@ public class CupsWaterSortGameScreen extends JPanel {
     }
 
     private void updateMoveLabel() {
-        movesLabel.setText("Moves: " + moves);
+        movesLabel.setText(com.worldofwonder.util.I18n.get("cups_moves", moves));
     }
 
     private void onTubeClick(Tube clicked) {
@@ -487,8 +557,8 @@ public class CupsWaterSortGameScreen extends JPanel {
                     won = true;
                     SoundUtil.playVictory();
                     int earnedPoints = Math.max(15, colorCount * 20 - moves * 2);
-                    String stars = (moves <= colorCount * 5 && extraTubesUsed == 0) ? "\u2B50\u2B50\u2B50" : (moves <= colorCount * 8 ? "\u2B50\u2B50" : "\u2B50");
-                    completeText.setText("<html><center><span style='font-size:24px;'>" + stars + "</span><br><br>You sorted all the colors in " + moves + " moves!<br>"
+                    String rating = (moves <= colorCount * 5 && extraTubesUsed == 0) ? "FLAWLESS (3/3)" : (moves <= colorCount * 8 ? "GREAT JOB (2/3)" : "SOLVED (1/3)");
+                    completeText.setText("<html><center><span style='font-size:20px;letter-spacing:1px;color:#ffd700;font-weight:bold;'>" + rating + "</span><br><br>You sorted all the colors in " + moves + " moves!<br>"
                             + (extraTubesUsed > 0 ? "<span style='color:#a0b0d0;font-size:12px;'><i>(+1 Extra Tube Booster used)</i></span><br>" : "")
                             + "<span style='color:#ffd700;font-size:18px;'>+" + earnedPoints + " Points Earned!</span></center></html>");
                     completeText.setForeground(UITheme.GOLD);
@@ -765,11 +835,22 @@ public class CupsWaterSortGameScreen extends JPanel {
             g2.setColor(UITheme.TEXT);
             g2.drawString(countText, r.x + (r.width - fm.stringWidth(countText)) / 2, by + 14);
 
-            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+            String name = tube.isEmpty() ? com.worldofwonder.util.I18n.get("tube_empty") : colorName(tube.topColor());
+            Font nameFont = UITheme.fontFor(name, Font.BOLD, 12);
+            g2.setFont(nameFont);
             fm = g2.getFontMetrics();
-            String name = tube.isEmpty() ? "Empty" : colorName(tube.topColor());
-            g2.setColor(UITheme.TEXT_MUTED);
-            g2.drawString(name, r.x + (r.width - fm.stringWidth(name)) / 2, bottom + BASE_H + 5 + fm.getAscent());
+            int nw = fm.stringWidth(name);
+            int nx = r.x + (r.width - nw) / 2;
+            int ny = bottom + BASE_H + 6 + fm.getAscent();
+
+            // Protective dark glass capsule badge to guarantee 100% contrast on any background
+            g2.setColor(new Color(11, 26, 44, 210));
+            g2.fillRoundRect(nx - 7, ny - fm.getAscent() - 2, nw + 14, fm.getHeight() + 4, 8, 8);
+            g2.setColor(new Color(255, 255, 255, 45));
+            g2.drawRoundRect(nx - 7, ny - fm.getAscent() - 2, nw + 14, fm.getHeight() + 4, 8, 8);
+
+            g2.setColor(new Color(0xf1, 0xf5, 0xf9));
+            g2.drawString(name, nx, ny);
 
             if (isSelected) {
                 g2.setColor(new Color(32, 211, 194, 60));
