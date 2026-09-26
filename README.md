@@ -1,6 +1,6 @@
 # 🌟 World of Wonder (Words-Of-Wonder GUI)
 
-A feature-rich Java desktop application designed using the **MVC (Model-View-Controller)** architectural pattern. Features interactive puzzle games, word searches, water cup sorting, and world trivia quizzes.
+A feature-rich Java desktop application designed using the **MVC (Model-View-Controller)** architectural pattern. Features interactive puzzle games, word searches, water cup sorting, and world trivia quizz.
 
 ---
 
